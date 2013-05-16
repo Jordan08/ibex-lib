@@ -1,24 +1,48 @@
-//============================================================================
-//                                  I B E X                                   
-// File        : ART : fixpoint of compo of ARTIter and contractor
-// Author      : Jordan Ninin
-// Copyright   : Ecole des Mines de Nantes (France)
-// License     : See the LICENSE file
-// Created     : May 15, 2013
-// Last Update : May 15, 2013
-//============================================================================
+/*
+ * ibex_CtcART.h
+ *
+ *  Created on: 16 mai 2013
+ *      Author: nininjo
+ */
 
-#include "ibex_CtcXNewton.h"
+#ifndef _IBEX_CTC_ART_H_
+#define _IBEX_CTC_ART_H_
+
+#include "ibex_Ctc.h"
 #include "ibex_CtcFixPoint.h"
-#include "ibex_CtcCompo.h"
-using namespace std;
+#include "ibex_CtcARTiter.h"
+
+
+
 namespace ibex {
 
-/*! Default fixpoint ratio. */
-  const double CtcXNewton::default_xnewton_ratio = 0.2;
+/** \ingroup ctcgroup
+ * \brief ART contractor
+ *
+ * This class is an implementation of the fixpoint part of X-Newton algorithm
+ *
+ *
+ */
 
-  CtcXNewton::CtcART (CtcARTIter & artiter, Ctc & ctc, double ratio) :
-    CtcFixPoint(* (new CtcCompo (artiter, ctc)), ratio) {}
+class CtcART : public CtcFixPoint {
 
-} // end namespace ibex
+ public:
+    /** build a fix of the composition (CtcCompo) of two contractors : an XNewtonIter contractor and another one (typically Hc4)
+     *
+     * \param xnewtoniter : an ARTiter contractor
+     * \param ctc : a contractor
+     * \param ratio : the ratio : stopping criterion for the fixpoint (see ibex_CtcFixPoint)
+     *
+     */
+// TODO
+    CtcXNewton(CtcARTiter & artiter, Ctc & ctc, double ratio = default_art_ratio);
+    ~CtcXNewton() {delete &ctc;};
 
+/** Default ratio used, set to 0.2. */
+    static const double default_art_ratio;
+  };
+
+}
+
+
+#endif /* _IBEX_CTC_ART_H_ */

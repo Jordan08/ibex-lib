@@ -16,19 +16,57 @@ namespace ibex {
 
 const double CtcXNewtonIter::default_max_diam_deriv =1e6;
 
-using namespace std;
-
-using namespace soplex;
 
 // the constructor
-CtcXNewtonIter::CtcXNewtonIter(const System& sys, vector<corner_point>& cpoints, int goal_ctr, Function* fgoal, 
+CtcXNewtonIter::CtcXNewtonIter(const System& sys1, vector<corner_point>& cpoints, int goal_ctr, Function* fgoal,
 		ctc_mode cmode, linear_mode lmode, int max_iter_soplex, double max_diam_deriv, double max_diam_box):
-		  CtcLinearRelaxation(sys,goal_ctr,fgoal,cmode,max_iter_soplex,max_diam_box), cpoints(cpoints),
+		  CtcLinearRelaxation(sys1,goal_ctr,cmode,max_iter_soplex,max_diam_box), cpoints(cpoints),
 		  max_diam_deriv(max_diam_deriv), lmode(lmode){
 
 	last_rnd = new int[sys.nb_var];
 	base_coin = new int[sys.nb_var];
 	linear = new bool[sys.nb_ctr];
+
+	linear_coef(sys.nb_ctr, sys.nb_var);
+
+	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
+
+		IntervalVector G(sys.nb_var);
+
+		if(ctr==goal_ctr) {
+			IntervalVector box1(sys.nb_var-1);
+			for (int i=0; i<sys.nb_var-1; i++)
+				box1[i]=sys.box[i];
+
+
+			IntervalVector G1(sys.nb_var-1);
+			sys.goal->gradient(box1,G1);
+			for (int i=0; i<sys.nb_var-1; i++)
+				G[i]=G1[i];
+			G[sys.nb_var-1]=0;
+		}
+		else
+			sys.ctrs[ctr].f.gradient(sys.box,G);
+
+		linear[ctr]=true;
+		// for testing if a function is linear (with scalar coefficients) w.r.t all its variables, we test the diameter of the gradient components.
+		for(int i=0;i<sys.nb_var;i++){
+			if (G[i].diam() >1e-10) {
+				linear[ctr]=false;
+				break;
+			}
+
+		}
+
+		linear_coef.row(ctr) = G;  // in case of a linear function, the coefficients are already computed.
+	}
+
+}
+
+CtcXNewtonIter::~CtcXNewtonIter() {
+	delete[] last_rnd;
+	delete[] base_coin;
+	delete[] linear;
 }
 
 
@@ -38,13 +76,14 @@ void CtcXNewtonIter::contract (IntervalVector & box){
 
 	IntervalVector initbox=box;
 	//returns the number of constraints in the linearized system
-	int nb_ctrs;
+
 	try {
-		nb_ctrs = Linearization(box);
-		if(nb_ctrs<1)  return;
-		optimizer(box, n, nb_ctrs);
+		Linearization(box);
+		if(mylinearsolver.getNbRows()<1)  return;
+		optimizer(box);
+		mylinearsolver.cleanConst();
 	}
-	catch(EmptyBoxException& e){
+	catch(EmptyBoxException& ){
 		box.set_empty(); // empty the box before exiting in case of EmptyBoxException
 		throw EmptyBoxException();
 	}
@@ -148,8 +187,9 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, int ctr, corner_point c
 		cont+=X_Linearization(box, ctr, cpoint, LEQ, G, id_point, nb_nonlinear_vars);
 		cont+=X_Linearization(box, ctr, cpoint, GEQ, G, id_point, nb_nonlinear_vars);
 
-	}else
+	} else
 		cont+=X_Linearization(box, ctr, cpoint, op,  G, id_point, nb_nonlinear_vars);
+
 	return cont;
 }
 
@@ -185,7 +225,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 		row1[n - 1] = -1.0;
 	}
 	for (int j = 0; j < n; j++) {
-		if (j == n - 1 && goal_ctr != -1)
+		if (j == n - 1 && (!sys.goal))
 			continue; //the variable y!
 
 		if (sys.ctrs[ctr].f.used(j)) {
@@ -354,9 +394,9 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 		//      cout << " j " << j <<  " " << savebox[j] << G[j] << endl;
 		box[j]=inf_x? savebox[j].lb():savebox[j].ub();
 		Interval a = ((inf_x && (op == LEQ || op== LT)) ||
-				(!inf_x && (op == GEQ || op== GT)))? G[j].lb():G[j].ub();
+					 (!inf_x && (op == GEQ || op== GT)))	? G[j].lb() : G[j].ub();
 		row1[j] =  a.mid();
-		ev-=a*box[j];
+		ev -= a*box[j];
 
 	}
 
@@ -365,7 +405,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 	if(corner) delete[] corner;
 	 */
 	if(ctr==goal_ctr)
-		ev+= goal->eval(box);
+		ev+= sys.goal->eval(box);
 	else
 		ev+= sys.ctrs[ctr].f.eval(box);
 
@@ -412,7 +452,7 @@ void CtcXNewtonIter::gradient_computation (IntervalVector& box, IntervalVector& 
 	for (int i=0; i<sys.nb_var-1; i++)
 		box1[i]=box[i];
 	IntervalVector G1(sys.nb_var-1);
-	goal->gradient(box1,G1);
+	sys.goal->gradient(box1,G1);
 	for (int i=0; i<sys.nb_var-1; i++)
 		G[i]=G1[i];
 	G[sys.nb_var-1]=0;
@@ -423,15 +463,16 @@ void CtcXNewtonIter::gradient_computation (IntervalVector& box, IntervalVector& 
 }
 
 /*********generation of the linearized system*********/
-int CtcXNewtonIter::Linearization( IntervalVector & box){
-	int n = sys.nb_var;
+void CtcXNewtonIter::Linearization( IntervalVector & box){
 
-	int nb_ctrs=0;
+	// Update the bounds the variables
+	mylinearsolver.initBoundVar(box);
 
+	// Create the linear relaxation of each constraint
 	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
 
 		IntervalVector G(sys.nb_var);
-		if (linear[ctr]) G= LinearCoef[ctr]; // constant derivatives have been already computed
+		if (linear[ctr]) G= linear_coef[ctr]; // constant derivatives have been already computed
 		else if(lmode==TAYLOR){ //derivatives are computed once (Taylor)
 			gradient_computation(box, G, ctr);
 		}
@@ -440,19 +481,15 @@ int CtcXNewtonIter::Linearization( IntervalVector & box){
 
 		if(cpoints[0]==K4){
 			for(int j=0; j<4; j++)
-				nb_ctrs+=X_Linearization(box, ctr, K4, G, j, nb_nonlinear_vars);
+				X_Linearization(box, ctr, K4, G, j, nb_nonlinear_vars);
 		}else  //  linearizations k corners per constraint
 			for(int k=0;k<cpoints.size();k++){
-				nb_ctrs+=X_Linearization(box, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
+				X_Linearization(box, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
 
 			}
 
 	}
 
-	// Constraint : bound of the variables
-	mylinearsolver.initBoundVar(box);
-
-	return nb_ctrs;
 }
 
 

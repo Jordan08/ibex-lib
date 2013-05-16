@@ -10,6 +10,12 @@
 
 
 
+#define _IBEX_WITH_SOPLEX_ 1
+
+#ifdef _IBEX_WITH_SOPLEX_
+#include "soplex.h"
+#endif
+
 
 namespace ibex {
 
@@ -17,13 +23,14 @@ class LinearSolver {
 
 public:
 
+	static const double default_eps;
+	static const double default_max_bound;
+
 	typedef enum  {OPTIMAL, INFEASIBLE, UNKNOWN, TIME_OUT, MAX_ITER } Status_Sol;
 
 	typedef enum  {MINIMIZE, MAXIMIZE} Sense;
 
 	typedef enum {OK, FAIL} Status;
-
-
 
 	LinearSolver(int nb_vars, int nb_ctr, int max_iter, int max_time_out);
 
@@ -36,37 +43,37 @@ public:
 
 
 // GET
-	int getNbRows();
+	int getNbRows() const;
 
-	double getObjValue();
+	double getObjValue() const;
 
-	Matrix& getCoefConstraint();
+	Status getCoefConstraint(Matrix& A);
 
-	IntervalVector& getB();
+	Status getB(IntervalVector& B);
 
-	double * getPrimalSol();
+	Status getPrimalSol(double * prim);
 
-	double * getDualSol();
+	Status getDualSol(double * dual);
 
 	Status getInfeasibleDir(double * sol);
 
 // SET
 
-	Status clean();
+	Status cleanConst();
 
-	Status cleanObj();
+	Status cleanAll();
 
 	Status setMaxIter(int max);
 
 	Status setMaxTimeOut(int time);
 
-	Status changeSense(Sense s);
+	Status setSense(Sense s);
 
-	Status changeVarObj(int var, double coef);
+	Status setVarObj(int var, double coef);
 
 	Status initBoundVar(IntervalVector bounds);
 
-	Status changeBoundVar(int var, Interval bound);
+	Status setBoundVar(int var, Interval bound);
 
 	Status setEpsilon(double eps);
 
@@ -75,13 +82,18 @@ public:
 
 private:
 
-	int nb_rows;
+	int nb_ctrs;
+
 	int nb_vars;
+	int nb_rows;
 
 	double obj_value;
 
 	double epsilon;
 
+#ifdef _IBEX_WITH_SOPLEX_
+	soplex::SoPlex mysoplex;
+#endif
 
 };
 
