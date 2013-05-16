@@ -63,13 +63,17 @@ class CtcXNewtonIter : public CtcLinearRelaxation {
   ~CtcXNewtonIter() {
     delete[] last_rnd;
     delete[] base_coin;
+    delete[] linear;
   }
   
+  /** Basic iteration of the LR-based contractor. Linearize the system and performs calls to Simplex *\
+  Apply contraction. It must be implemented in the subclasses **/
+  void contract( IntervalVector& box);
 
   /** X_Newton iteration. 
   Linearize the system and performs 2n calls to Simplex in order to reduce 
   the 2 bounds of each variable */
-  int Linearization( IntervalVector & box, soplex::SoPlex& mysoplex);
+  int Linearization( IntervalVector & box);
 
   /** Default max_diam_deriv value, set to 1e5  **/
   static const double default_max_diam_deriv;
@@ -88,6 +92,13 @@ class CtcXNewtonIter : public CtcLinearRelaxation {
 
   int* base_coin;
 
+  /** stores the coefficients of linear constraints */
+  IntervalMatrix LinearCoef;
+
+
+  /** indicates if the constraint is linear */
+  bool* linear;
+
   /** max_diam_deriv : the maximum diameter of the derivatives for calling Soplex (default value 1.e5) */
   double max_diam_deriv;
 
@@ -95,10 +106,10 @@ class CtcXNewtonIter : public CtcLinearRelaxation {
   linear_mode lmode;
 
   /** Tries to add a linearization in the model mysoplex. Returns true if it is succesful */
-  int X_Linearization(IntervalVector & box,soplex::SoPlex& mysoplex, int ctr, corner_point cpoint,  IntervalVector &G,
+  int X_Linearization(IntervalVector & box, int ctr, corner_point cpoint,  IntervalVector &G,
 		      int id_point, int& non_linear_vars);
 
-  int X_Linearization(IntervalVector& box, soplex::SoPlex& mysoplex, int ctr, corner_point cpoint, CmpOp op,
+  int X_Linearization(IntervalVector& box, int ctr, corner_point cpoint, CmpOp op,
   IntervalVector &G, int id_point, int& non_linear_vars);
 
 

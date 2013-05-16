@@ -16,26 +16,44 @@ namespace ibex {
 
 const double CtcXNewtonIter::default_max_diam_deriv =1e6;
 
-  using namespace std;
+using namespace std;
 
 using namespace soplex;
 
 // the constructor
 CtcXNewtonIter::CtcXNewtonIter(const System& sys, vector<corner_point>& cpoints, int goal_ctr, Function* fgoal, 
-		   ctc_mode cmode, linear_mode lmode, int max_iter_soplex, double max_diam_deriv, double max_diam_box):
-  CtcLinearRelaxation(sys,goal_ctr,fgoal,cmode,max_iter_soplex,max_diam_box), cpoints(cpoints),
-  max_diam_deriv(max_diam_deriv), lmode(lmode){
+		ctc_mode cmode, linear_mode lmode, int max_iter_soplex, double max_diam_deriv, double max_diam_box):
+		  CtcLinearRelaxation(sys,goal_ctr,fgoal,cmode,max_iter_soplex,max_diam_box), cpoints(cpoints),
+		  max_diam_deriv(max_diam_deriv), lmode(lmode){
 
-  last_rnd = new int[sys.nb_var];
-  base_coin = new int[sys.nb_var]; 
+	last_rnd = new int[sys.nb_var];
+	base_coin = new int[sys.nb_var];
+	linear = new bool[sys.nb_ctr];
+}
+
+
+void CtcXNewtonIter::contract (IntervalVector & box){
+	if (box.max_diam() > max_diam_box) return; // is it necessary?  YES (BNE) Soplex can give false infeasible results with large numbers
+	int n=sys.nb_var;
+
+	IntervalVector initbox=box;
+	//returns the number of constraints in the linearized system
+	int nb_ctrs;
+	try {
+		nb_ctrs = Linearization(box);
+		if(nb_ctrs<1)  return;
+		optimizer(box, n, nb_ctrs);
+	}
+	catch(EmptyBoxException& e){
+		box.set_empty(); // empty the box before exiting in case of EmptyBoxException
+		throw EmptyBoxException();
+	}
+
 }
 
 
 
-
-
-
-  /*  pas implanté en version 2 
+/*  pas implanté en version 2
 
 void CtcXNewtonIter::best_corner(int ctr, int op, INTERVAL_VECTOR& G, bool* corner){
    int n=sys.nb_var;
@@ -82,13 +100,13 @@ REAL CtcXNewtonIter::eval_corner(int ctr, int op, INTERVAL_VECTOR& G, bool* corn
    for (int j=0; j<n; j++){
       if(j==n-1 && goal_ctr!=-1) continue; //the variable y! 
       if(!isvar[ctr][j]) continue;
-      
+
       if(Diam(G(j+1))> max_diam_deriv)
 	{
          sys.box=savebox;
          return 0; //to avoid problems with SoPleX
 	}
-      
+
       bool inf_x=corner[j];
       sys.box[j]=inf_x? Inf(savebox(j+1)):Sup(savebox(j+1));
       INTERVAL a = ((inf_x && (op == LEQ || op== LT)) ||
@@ -103,7 +121,7 @@ REAL CtcXNewtonIter::eval_corner(int ctr, int op, INTERVAL_VECTOR& G, bool* corn
       ev+=goal->output();
    }else{
       ev+=sys.ctr(ctr).eval(space);
-          
+
    }
    }
    catch (EmptyBoxException& )
@@ -113,30 +131,30 @@ REAL CtcXNewtonIter::eval_corner(int ctr, int op, INTERVAL_VECTOR& G, bool* corn
    return Mid(ev);
 
 }
-  */
+ */
 
- 
 
-  int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysoplex, int ctr, corner_point cpoint, 
-			      IntervalVector& G, int id_point, int& nb_nonlinear_vars){
 
-    CmpOp op= sys.ctrs[ctr].op;
+int CtcXNewtonIter::X_Linearization(IntervalVector& box, int ctr, corner_point cpoint,
+		IntervalVector& G, int id_point, int& nb_nonlinear_vars){
 
-    if(op!=EQ && isInner(box, sys, ctr)) return 0; //the constraint is satified
+	CmpOp op= sys.ctrs[ctr].op;
 
-    int cont=0;
-    if(ctr==goal_ctr) op = LEQ;
-    if(op==EQ){
-      cont+=X_Linearization(box,mysoplex, ctr, cpoint, LEQ, G, id_point, nb_nonlinear_vars);
-      cont+=X_Linearization(box,mysoplex, ctr, cpoint, GEQ, G, id_point, nb_nonlinear_vars);
-       
-    }else
-      cont+=X_Linearization(box,mysoplex, ctr, cpoint, op,  G, id_point, nb_nonlinear_vars);
-    return cont;
+	if(op!=EQ && isInner(box, sys, ctr)) return 0; //the constraint is satified
+
+	int cont=0;
+	if(ctr==goal_ctr) op = LEQ;
+	if(op==EQ){
+		cont+=X_Linearization(box, ctr, cpoint, LEQ, G, id_point, nb_nonlinear_vars);
+		cont+=X_Linearization(box, ctr, cpoint, GEQ, G, id_point, nb_nonlinear_vars);
+
+	}else
+		cont+=X_Linearization(box, ctr, cpoint, op,  G, id_point, nb_nonlinear_vars);
+	return cont;
 }
 
 //return 0 only when the linearization is not performed
-int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysoplex,
+int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 		int ctr, corner_point cpoint, CmpOp op, 
 		IntervalVector& G, int id_point, int& nb_nonlinear_vars) {
 	int n = sys.nb_var;
@@ -161,10 +179,10 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 	IntervalVector savebox(box);
 	Interval ev(0.0);
 	Interval tot_ev(0.0);
-	DSVector row1(n);
+	Vector row1(n);
 
 	if (goal_ctr == ctr) {
-		row1.add(n - 1, -1.0);
+		row1[n - 1] = -1.0;
 	}
 	for (int j = 0; j < n; j++) {
 		if (j == n - 1 && goal_ctr != -1)
@@ -172,7 +190,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 
 		if (sys.ctrs[ctr].f.used(j)) {
 			if (lmode == HANSEN && !linear[ctr]) {
-			  gradient_computation(box,G,ctr);
+				gradient_computation(box,G,ctr);
 			}
 		} 
 		else  continue;
@@ -230,7 +248,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 			} else if (id_point == 2) {
 				if (((double) nonlinear_var )> ((double) nb_nonlinear_vars )/ 3.0
 						&& (double) nonlinear_var
-								<= 2 * (double) nb_nonlinear_vars / 3.0)
+						<= 2 * (double) nb_nonlinear_vars / 3.0)
 					inf_x = base_coin[j];
 				else
 					inf_x = !base_coin[j];
@@ -248,7 +266,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 		case NEG:
 			inf_x = (last_rnd[j] % 2 != 0);
 			break;
-	       /*  not implemented in v2.0
+			/*  not implemented in v2.0
              case GREEDY1:
 	       inf_x=((abs(Inf(G(j+1))) < abs(Sup(G(j+1))) && (op == LEQ || op== LT)) ||
                         (abs(Inf(G(j+1))) >= abs(Sup(G(j+1))) && (op == GEQ || op== GT))  )? true:false;
@@ -277,10 +295,10 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 	    last_rnd[j]=inf_x? 0:1;
 	    break;
 
-	       */
-	    
+			 */
 
-		  /*
+
+			/*
               case GREEDY7:
                  //select the coin nearest to the loup 
                  if(goal_ctr!=-1 && Dimension(Optimizer::global_optimizer())>0){
@@ -291,8 +309,8 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
                    inf_x=(rand()%2==0);
 		   }
                  break;
-		  */
-	       /*
+			 */
+			/*
              case GREEDY6:
                  save=space.box;
                  fh_inf, fh_sup;
@@ -325,131 +343,120 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box, soplex::SoPlex& mysople
 		 last_rnd[j]=inf_x? 0:1;  
 		 space.box=save;
               break;
-	       */
+			 */
 		default:
 			last_rnd[j] = rand();
 			inf_x = (last_rnd[j] % 2 == 0);
 			break;
 
-      }
+		}
 
-      //      cout << " j " << j <<  " " << savebox[j] << G[j] << endl;
-	  box[j]=inf_x? savebox[j].lb():savebox[j].ub();
-	  Interval a = ((inf_x && (op == LEQ || op== LT)) ||
-			(!inf_x && (op == GEQ || op== GT)))? G[j].lb():G[j].ub();
-	  row1.add(j, a.mid());
-	  ev-=a*box[j]; 
-        
-    }
-    
-    // cout << " ev  " << ev << endl;
-    /*  used in BEST not implemented in v2.0
+		//      cout << " j " << j <<  " " << savebox[j] << G[j] << endl;
+		box[j]=inf_x? savebox[j].lb():savebox[j].ub();
+		Interval a = ((inf_x && (op == LEQ || op== LT)) ||
+				(!inf_x && (op == GEQ || op== GT)))? G[j].lb():G[j].ub();
+		row1[j] =  a.mid();
+		ev-=a*box[j];
+
+	}
+
+	// cout << " ev  " << ev << endl;
+	/*  used in BEST not implemented in v2.0
 	if(corner) delete[] corner;
-    */
-    if(ctr==goal_ctr)
-      ev+= goal->eval(box);
-    else
-      ev+= sys.ctrs[ctr].f.eval(box);
+	 */
+	if(ctr==goal_ctr)
+		ev+= goal->eval(box);
+	else
+		ev+= sys.ctrs[ctr].f.eval(box);
 
-    if(id_point==0) nb_nonlinear_vars=nonlinear_var;
-  
-   
-    for(int j=0;j<n;j++)
-      tot_ev+=row1[j]*savebox[j]; //natural evaluation of the left side of the linear constraint
+	if(id_point==0) nb_nonlinear_vars=nonlinear_var;
 
 
-  bool added=false;
-    if(op ==LEQ || op== LT){
-        //g(xb) + a1' x1 + ... + an xn <= 0
-      if(tot_ev.lb()>(-ev).ub())   throw EmptyBoxException(); //the constraint is not satisfied
-      if((-ev).ub() <tot_ev.ub()){ //otherwise the constraint is satisfied for any point in the box
-	mysoplex.addRow(LPRow(-infinity, row1, (-ev).ub()));
-	added=true;
-      }
-    }else{
-      if(tot_ev.ub()<(-ev).lb())  throw EmptyBoxException();
-      if((-ev).lb()>tot_ev.lb()){
-	mysoplex.addRow(LPRow((-ev).lb(), row1, infinity));
-          added=true;
-       }
-    }
-
-    box=savebox;
-    
-    
-    return (added)? 1:0;
-  
+	for(int j=0;j<n;j++)
+		tot_ev+=row1[j]*savebox[j]; //natural evaluation of the left side of the linear constraint
 
 
-  }
+	bool added=false;
+	if(op ==LEQ || op== LT){
+		//g(xb) + a1' x1 + ... + an xn <= 0
+		if(tot_ev.lb()>(-ev).ub())   throw EmptyBoxException(); //the constraint is not satisfied
+		if((-ev).ub() <tot_ev.ub()){ //otherwise the constraint is satisfied for any point in the box
+			mylinearsolver.addConstraint( row1, LEQ, (-ev).ub());
+			added=true;
+		}
+	}else{
+		if(tot_ev.ub()<(-ev).lb())  throw EmptyBoxException();
+		if((-ev).lb()>tot_ev.lb()){
+			mylinearsolver.addConstraint( row1, GEQ, (-ev).lb() );
+			added=true;
+		}
+	}
+
+	box=savebox;
+
+
+	return (added)? 1:0;
 
 
 
-  /* Computes the gradient G of the constraint ctr : special case if ctr==goal_ctr */
-  
-  void CtcXNewtonIter::gradient_computation (IntervalVector& box, IntervalVector& G, int ctr)
-  {
-    if(goal_ctr==ctr)  // objective function  in optimization
-      {IntervalVector box1(sys.nb_var-1);
+}
+
+
+
+/* Computes the gradient G of the constraint ctr : special case if ctr==goal_ctr */
+
+void CtcXNewtonIter::gradient_computation (IntervalVector& box, IntervalVector& G, int ctr)
+{
+	if(goal_ctr==ctr)  // objective function  in optimization
+	{IntervalVector box1(sys.nb_var-1);
 	for (int i=0; i<sys.nb_var-1; i++)
-	  box1[i]=box[i];
+		box1[i]=box[i];
 	IntervalVector G1(sys.nb_var-1);
 	goal->gradient(box1,G1);
 	for (int i=0; i<sys.nb_var-1; i++)
-	  G[i]=G1[i];
+		G[i]=G1[i];
 	G[sys.nb_var-1]=0;
-      }
-    
-    else
-      sys.ctrs[ctr].f.gradient(box,G);
-  }
+	}
+
+	else
+		sys.ctrs[ctr].f.gradient(box,G);
+}
 
 /*********generation of the linearized system*********/
-int CtcXNewtonIter::Linearization( IntervalVector & box, soplex::SoPlex& mysoplex){
-  int n = sys.nb_var;
-  int nvarsimplex=n;
+int CtcXNewtonIter::Linearization( IntervalVector & box){
+	int n = sys.nb_var;
 
-  DSVector dummycol(0);
+	int nb_ctrs=0;
 
-  for (int j=0; j<nvarsimplex; j++){
-	mysoplex.addCol(LPCol(0.0, dummycol, infinity, - infinity ));
-  }
+	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
 
-  int nb_ctrs=0;
+		IntervalVector G(sys.nb_var);
+		if (linear[ctr]) G= LinearCoef[ctr]; // constant derivatives have been already computed
+		else if(lmode==TAYLOR){ //derivatives are computed once (Taylor)
+			gradient_computation(box, G, ctr);
+		}
 
-  for(int ctr=0; ctr<sys.nb_ctr;ctr++){
+		int nb_nonlinear_vars;
 
-    IntervalVector G(sys.nb_var);
-    if (linear[ctr]) G= LinearCoef[ctr]; // constant derivatives have been already computed
-    else if(lmode==TAYLOR){ //derivatives are computed once (Taylor)
-      gradient_computation(box, G, ctr);
-    }
+		if(cpoints[0]==K4){
+			for(int j=0; j<4; j++)
+				nb_ctrs+=X_Linearization(box, ctr, K4, G, j, nb_nonlinear_vars);
+		}else  //  linearizations k corners per constraint
+			for(int k=0;k<cpoints.size();k++){
+				nb_ctrs+=X_Linearization(box, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
 
-    int nb_nonlinear_vars;
+			}
 
-    if(cpoints[0]==K4){
-	 for(int j=0; j<4; j++)
-	   nb_ctrs+=X_Linearization(box,mysoplex, ctr, K4, G, j, nb_nonlinear_vars);
-    }else  //  linearizations k corners per constraint
-       for(int k=0;k<cpoints.size();k++){
-	 nb_ctrs+=X_Linearization(box,mysoplex, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
+	}
 
-     }
-     
-  }
+	// Constraint : bound of the variables
+	mylinearsolver.initBoundVar(box);
 
-  for (int j=0; j<nvarsimplex; j++){
-        DSVector row1(nvarsimplex);
-        row1.add (j,1.0);
-        mysoplex.addRow(LPRow(box[j].lb(), row1, box[j].ub()));
-
-  }
-
- return nb_ctrs;
- }
+	return nb_ctrs;
+}
 
 
 
 
- 
+
 }
