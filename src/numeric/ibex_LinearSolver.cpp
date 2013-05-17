@@ -61,9 +61,11 @@ LinearSolver::Status_Sol LinearSolver::solve() {
 	}catch(soplex::SPxException&){
 		stat = soplex::SPxSolver::UNKNOWN;
 	}
-
-	if (stat==soplex::SPxSolver::OPTIMAL)
+	
+	if (stat==soplex::SPxSolver::OPTIMAL) {
+		obj_value = mysoplex.objValue();
 		return OPTIMAL;
+	}
 	else if (stat==soplex::SPxSolver::ABORT_TIME)
 		return TIME_OUT;
 	else if (stat==soplex::SPxSolver::ABORT_ITER)

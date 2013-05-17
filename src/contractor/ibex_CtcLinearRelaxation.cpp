@@ -293,42 +293,45 @@ bool CtcLinearRelaxation::isInner(IntervalVector & box,const System& sys, int j)
 
 void CtcLinearRelaxation::choose_next_variable ( IntervalVector & box, int & nexti, int & infnexti, int* inf_bound, int* sup_bound)
 {
-	double prec_bound = 1.e-8; // relative precision for the indicators
-	double delta=1.e100;
-	double deltaj=delta;
 
 	// the primal solution : used by choose_next_variable
-	double * primal_solution = new double[sys.nb_var];
 	LinearSolver::Status stat_prim = mylinearsolver.getPrimalSol(primal_solution);
+	
+	if (stat_prim==OK) {
+		double prec_bound = 1.e-8; // relative precision for the indicators
+		double delta=1.e100;
+		double deltaj=delta;
 
+		for (int j=0;j<sys.nb_var;j++)	{
 
-	for (int j=0;j<sys.nb_var;j++)	{
-
-		if (inf_bound[j]==0) {
-			deltaj= fabs (primal_solution[j]- box[j].lb());
-			if ((fabs (box[j].lb()) < 1 && deltaj < prec_bound) ||
-				(fabs (box[j].lb()) >= 1 && fabs (deltaj /(box[j].lb())) < prec_bound))	{
-				inf_bound[j]=1;
+			if (inf_bound[j]==0) {
+				deltaj= fabs (primal_solution[j]- box[j].lb());
+				if ((fabs (box[j].lb()) < 1 && deltaj < prec_bound) ||
+					(fabs (box[j].lb()) >= 1 && fabs (deltaj /(box[j].lb())) < prec_bound))	{
+					inf_bound[j]=1;
+				}
+				if (inf_bound[j]==0 && deltaj < delta) 	{
+					nexti=j; infnexti=0;delta=deltaj;
+				}
 			}
-			if (inf_bound[j]==0 && deltaj < delta) 	{
-				nexti=j; infnexti=0;delta=deltaj;
+
+			if (sup_bound[j]==0) {
+				deltaj = fabs (primal_solution[j]- box[j].ub());
+
+				if ((fabs (box[j].ub()) < 1 && deltaj < prec_bound) 	||
+					(fabs (box[j].ub()) >= 1 && fabs (deltaj/(box[j].ub())) < prec_bound)) {
+					sup_bound[j]=1;
+				}
+				if (sup_bound[j]==0 && deltaj < delta) {
+					nexti=j; infnexti=1;delta=deltaj;
+				}
 			}
+
 		}
-
-		if (sup_bound[j]==0) {
-			deltaj = fabs (primal_solution[j]- box[j].ub());
-
-			if ((fabs (box[j].ub()) < 1 && deltaj < prec_bound) 	||
-				(fabs (box[j].ub()) >= 1 && fabs (deltaj/(box[j].ub())) < prec_bound)) {
-				sup_bound[j]=1;
-			}
-			if (sup_bound[j]==0 && deltaj < delta) {
-				nexti=j; infnexti=1;delta=deltaj;
-			}
-		}
-
 	}
-	delete[] primal_solution;
+	else {
+		// TODO find something to do by default 
+	}
 
 }
 
