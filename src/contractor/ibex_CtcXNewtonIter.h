@@ -46,6 +46,7 @@ public:
 	 * \param sys The system (the extended system in case of optimization)
 	 * \param cpoints The vector of corner selection in linearization (X_INF, X_SUP, RANDOM, RANDOM_INV)
 	 * \param goal_ctr  (goal index for optimization, -1 for constraint solving)
+	 * \param goal_var
 	 * \param goal   (goal function pointer for optimization, NULL for constraint solving)
 	 * \param cmode X_NEWTON (contracts all the box) | LOWER_BOUNDING (in optimization only improves the left bound of the variable y)
 	 * \param lmode TAYLOR | HANSEN : linear relaxation method.
@@ -55,9 +56,9 @@ public:
 	 */
 
 
-	CtcXNewtonIter(const System& sys, std::vector<corner_point>& cpoints, int goal_ctr=-1, Function* goal=0,
-			CtcLinearRelaxation::ctc_mode cmode=ALL_BOX, linear_mode lmode=HANSEN, int max_iter_soplex=100,
-			double max_diam_deriv=default_max_diam_deriv, double max_diam_box=default_max_diam_box);
+	CtcXNewtonIter(const System& sys, std::vector<corner_point>& cpoints,
+			ctc_mode cmode=ALL_BOX, linear_mode lmode=HANSEN, int max_iter=LinearSolver::default_max_iter,
+			double max_diam_deriv=default_max_diam_deriv, double max_diam_box=LinearSolver::default_max_diam_box);
 
 
 	/** Deletes this instance. */
@@ -65,42 +66,42 @@ public:
 
 	/** Basic iteration of the LR-based contractor. Linearize the system and performs calls to Simplex *\
   Apply contraction. It must be implemented in the subclasses **/
-	void contract( IntervalVector& box);
+	virtual void contract( IntervalVector& box);
 
 	/** X_Newton iteration.
   Linearize the system and performs 2n calls to Simplex in order to reduce 
   the 2 bounds of each variable */
-	void Linearization( IntervalVector & box);
-
-	/** Default max_diam_deriv value, set to 1e5  **/
-	static const double default_max_diam_deriv;
-
+	int linearization( IntervalVector & box);
 
 	/** The vector of corner selection in linearization (X_INF, X_SUP, RANDOM, RANDOM_INV) */
 	std::vector<corner_point>& cpoints;
 
 protected:
+
 	/* Computes the gradient G of the constraint ctr : special case if ctr==goal_ctr */
 	void gradient_computation (IntervalVector& box, IntervalVector& G, int ctr);
 
 
-	/* for implementing RANDOM_INV one needs to store the last random corners */
-	int* last_rnd;
-
-	int* base_coin;
-
-	/** stores the coefficients of linear constraints */
-	IntervalMatrix linear_coef;
-
-
-	/** indicates if the constraint is linear */
-	bool* linear;
+	/** Default max_diam_deriv value, set to 1e5  **/
+	static const double default_max_diam_deriv;
 
 	/** max_diam_deriv : the maximum diameter of the derivatives for calling Soplex (default value 1.e5) */
 	double max_diam_deriv;
 
 	/** TAYLOR | HANSEN : the linear relaxation method */
 	linear_mode lmode;
+
+	/** stores the coefficients of linear constraints */
+	IntervalMatrix linear_coef;
+
+	/* for implementing RANDOM_INV one needs to store the last random corners */
+	int* last_rnd;
+
+	int* base_coin;
+
+	/** indicates if the constraint is linear */
+	bool* linear;
+
 
 	/** Tries to add a linearization in the model mysoplex. Returns true if it is succesful */
 	int X_Linearization(IntervalVector & box, int ctr, corner_point cpoint,  IntervalVector &G,

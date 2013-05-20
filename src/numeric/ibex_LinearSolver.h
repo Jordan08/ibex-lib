@@ -1,9 +1,12 @@
-/*
- * ibex_LinearSolver.h
- *
- *  Created on: 15 mai 2013
- *      Author: nininjo
- */
+//============================================================================
+//                                  I B E X
+// Interface with the linear solver
+// File        : ibex_LinearSolver.h
+// Author      : Jordan Ninin
+// License     : See the LICENSE file
+// Created     : May 15, 2013
+// Last Update : May 15, 2013
+//============================================================================
 
 #ifndef IBEX_LINEARSOLVER_H_
 #define IBEX_LINEARSOLVER_H_
@@ -11,6 +14,13 @@
 
 
 #define _IBEX_WITH_SOPLEX_ 1
+
+
+#include <string.h>
+#include "ibex_Vector.h"
+#include "ibex_Matrix.h"
+#include "ibex_IntervalVector.h"
+#include "ibex_CmpOp.h"
 
 #ifdef _IBEX_WITH_SOPLEX_
 #include "soplex.h"
@@ -21,10 +31,38 @@ namespace ibex {
 
 class LinearSolver {
 
+
+private:
+
+	int nb_ctrs;
+
+	int nb_vars;
+	int nb_rows;
+
+	double obj_value;
+
+	double epsilon;
+
+#ifdef _IBEX_WITH_SOPLEX_
+	soplex::SoPlex *mysoplex;
+#endif
+
+
 public:
 
 	static const double default_eps;
 	static const double default_max_bound;
+
+    /** Default max_time_out, set to 100s  */
+    static const int default_max_time_out;
+
+    /** Default max_iter, set to 100 iterations */
+    static const int default_max_iter;
+
+
+	/** Default max_diam_deriv value, set to 1e6  **/
+	static const double default_max_diam_box;
+
 
 	typedef enum  {OPTIMAL, INFEASIBLE, UNKNOWN, TIME_OUT, MAX_ITER } Status_Sol;
 
@@ -32,14 +70,15 @@ public:
 
 	typedef enum {OK, FAIL} Status;
 
-	LinearSolver(int nb_vars, int nb_ctr, int max_iter, int max_time_out);
+	LinearSolver(int nb_vars, int nb_ctr, int max_iter= default_max_iter,
+			int max_time_out= default_max_time_out, double eps=default_eps);
 
 	~LinearSolver();
 
 
 	Status_Sol solve();
 
-	Status writeFile(std::string name);
+	Status writeFile(std::string name="save_LP.lp");
 
 
 // GET
@@ -49,13 +88,18 @@ public:
 
 	Status getCoefConstraint(Matrix& A);
 
+	Status getCoefConstraint_trans(Matrix& A_trans);
+
 	Status getB(IntervalVector& B);
 
-	Status getPrimalSol(double * prim);
+	Status getPrimalSol(Vector & prim);
 
-	Status getDualSol(double * dual);
+	Status getDualSol(Vector & dual);
 
-	Status getInfeasibleDir(double * sol);
+	Status getInfeasibleDir(Vector & sol);
+
+	double getEpsilon() const;
+
 
 // SET
 
@@ -78,22 +122,6 @@ public:
 	Status setEpsilon(double eps);
 
 	Status addConstraint(Vector & row, CmpOp sign, double rhs );
-
-
-private:
-
-	int nb_ctrs;
-
-	int nb_vars;
-	int nb_rows;
-
-	double obj_value;
-
-	double epsilon;
-
-#ifdef _IBEX_WITH_SOPLEX_
-	soplex::SoPlex mysoplex;
-#endif
 
 };
 
