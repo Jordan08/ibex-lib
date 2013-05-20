@@ -66,17 +66,17 @@ public:
 
 	/** Basic iteration of the LR-based contractor. Linearize the system and performs calls to Simplex *\
   Apply contraction. It must be implemented in the subclasses **/
-	virtual void contract( IntervalVector& box);
-
-	/** X_Newton iteration.
-  Linearize the system and performs 2n calls to Simplex in order to reduce 
-  the 2 bounds of each variable */
-	int linearization( IntervalVector & box);
+	void contract( IntervalVector& box);
 
 	/** The vector of corner selection in linearization (X_INF, X_SUP, RANDOM, RANDOM_INV) */
 	std::vector<corner_point>& cpoints;
 
-protected:
+private:
+
+	/** X_Newton iteration.
+  Linearize the system and performs 2n calls to Simplex in order to reduce
+  the 2 bounds of each variable */
+	int linearization( IntervalVector & box);
 
 	/* Computes the gradient G of the constraint ctr : special case if ctr==goal_ctr */
 	void gradient_computation (IntervalVector& box, IntervalVector& G, int ctr);

@@ -58,6 +58,9 @@ namespace ibex {
 
   protected:
 
+    /** the linearization technique. It must be implemented in the subclasses */
+    virtual int linearization(IntervalVector& box) =0;
+
     /** The system */
     const System& sys;
 
@@ -73,9 +76,6 @@ namespace ibex {
 
     /** The linear solver that will be use */
     LinearSolver *mylinearsolver;
-
-    /** the linearization technique. It must be implemented in the subclasses */
-    int linearization(IntervalVector& box);
 
     /*Neumaier Shcherbina postprocessing in case of optimal solution found : the result obj is made reliable */
     void NeumaierShcherbina_postprocessing (int var, Interval & obj, IntervalVector& box, Matrix & As, IntervalVector& B, LinearSolver::Sense minimization, Vector &dual_solution);

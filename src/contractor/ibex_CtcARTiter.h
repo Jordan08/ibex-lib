@@ -44,14 +44,16 @@ public:
 
 	/** Basic iteration of the LR-based contractor. Linearize the system and performs calls to Simplex *\
   Apply contraction. It must be implemented in the subclasses **/
-	virtual void contract( IntervalVector& box);
+	void contract( IntervalVector& box);
 
+
+
+private:
 	/** ART iteration.
   Linearize the system and performs 2n calls to Simplex in order to reduce
   the 2 bounds of each variable */
 	int linearization( IntervalVector & box);
 
-private:
 
 	void convert_back(IntervalVector & box, IntervalVector & epsilon);
 
