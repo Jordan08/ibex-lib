@@ -28,26 +28,26 @@ LinearSolver::LinearSolver(int nb_vars, int nb_ctr, int max_iter, int max_time_o
 
 	mysoplex= new soplex::SoPlex();
 
-	// initialize the number of variables of the LP
-	soplex::DSVector col(0);
-	for (int j=0; j<nb_vars; j++){
-		mysoplex->addCol(soplex::LPCol(0.0, col, soplex::infinity, - soplex::infinity ));
-	}
-
-	// initialize the constraint of the bound of the variable
-	soplex::DSVector row(nb_vars);
-	for (int j=0; j<nb_vars; j++){
-		row.add (j,1.0);
-		mysoplex->addRow(soplex::LPRow(-soplex::infinity, row,soplex::infinity));
-		row.clear();
-	}
-
-	nb_rows += nb_vars;
-
 	mysoplex->changeSense(soplex::SPxLP::MINIMIZE);
 	mysoplex->setTerminationIter(max_iter);
 	mysoplex->setTerminationTime(max_time_out);
 	mysoplex->setDelta(epsilon);
+
+	// initialize the number of variables of the LP
+	soplex::DSVector col1(0);
+	for (int j=0; j<nb_vars; j++){
+		mysoplex->addCol(soplex::LPCol(0.0, col1, soplex::infinity, -( soplex::infinity )));
+	}
+
+	// initialize the constraint of the bound of the variable
+	soplex::DSVector row1(nb_vars);
+	for (int j=0; j<nb_vars; j++){
+		row1.add (j,1.0);
+		mysoplex->addRow(soplex::LPRow(-soplex::infinity, row1,soplex::infinity));
+		row1.clear();
+	}
+
+	nb_rows += nb_vars;
 
 }
 
@@ -100,12 +100,12 @@ int LinearSolver::getNbRows() const {
 }
 
 double LinearSolver::getObjValue() const {
-	return mysoplex->objValue();
+	return obj_value;
 }
 
 
 double LinearSolver::getEpsilon() const {
-	return mysoplex->delta();
+	return epsilon;
 }
 
 LinearSolver::Status LinearSolver::getCoefConstraint(Matrix &A) {
@@ -237,6 +237,7 @@ LinearSolver::Status LinearSolver::cleanConst() {
 	try {
 		mysoplex->removeRowRange(nb_vars, nb_rows-1);
 		nb_rows = nb_vars;
+		obj_value = POS_INFINITY; //TODO
 		res= OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -250,6 +251,7 @@ LinearSolver::Status LinearSolver::cleanAll() {
 	try {
 		mysoplex->removeRowRange(0, nb_rows-1);
 		nb_rows = 0;
+		obj_value = POS_INFINITY; //TODO
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -363,6 +365,10 @@ LinearSolver::Status LinearSolver::addConstraint(ibex::Vector& row, CmpOp sign, 
 	LinearSolver::Status res= FAIL;
 	try {
 		soplex::DSVector row1(nb_vars);
+		for (int i=0; i< nb_vars ; i++) {
+			row1.add(i, row[i]);
+		}
+
 		if (sign==LEQ || sign==LT) {
 			mysoplex->addRow(soplex::LPRow(-soplex::infinity, row1, rhs));
 			nb_rows++;

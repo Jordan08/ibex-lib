@@ -286,7 +286,7 @@ bool CtcLinearRelaxation::choose_next_variable ( IntervalVector & box,
 		// and updating the indicators if a bound has been found feasible (with the precision prec_bound)
 		// called only when a primal solution is found by the LP solver (use of primal_solution)
 
-		double prec_bound = 1.e-8; // relative precision for the indicators TODO change with the precision of the optimizer
+		double prec_bound = mylinearsolver->getEpsilon(); // relative precision for the indicators TODO change with the precision of the optimizer
 		double delta=1.e100;
 		double deltaj=delta;
 

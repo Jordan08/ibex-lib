@@ -45,7 +45,7 @@ CtcXNewtonIter::CtcXNewtonIter(const System& sys1, std::vector<corner_point>& cp
 			sys.goal->gradient(box1,G1);
 			for (int i=0; i<sys.nb_var-1; i++)
 				G[i]=G1[i];
-			G[sys.nb_var-1]=0;
+			G[goal_var]=0;  //G[sys.nb_var-1]=0;
 		}
 		else {
 			sys.ctrs[ctr].f.gradient(sys.box,G);
@@ -80,7 +80,7 @@ void CtcXNewtonIter::contract (IntervalVector & box){
 	//returns the number of constraints in the linearized system
 
 	try {
-		int cont =linearization(box);
+		int cont = linearization(box);
 		if(cont<1)  return;
 		optimizer(box);
 		mylinearsolver->cleanConst();
@@ -104,7 +104,7 @@ int CtcXNewtonIter::linearization( IntervalVector & box)  {
 	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
 
 		IntervalVector G(sys.nb_var);
-		if (linear[ctr]) G= linear_coef[ctr]; // constant derivatives have been already computed
+		if (linear[ctr]) G= linear_coef.row(ctr); // constant derivatives have been already computed
 		else if(lmode==TAYLOR){ //derivatives are computed once (Taylor)
 			gradient_computation(box, G, ctr);
 		}
@@ -174,7 +174,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 	Vector row1(n);
 
 	if (goal_ctr == ctr) {
-		row1[goal_var] = -1.0;
+		row1[goal_var] += -1.0;
 	}
 	for (int j = 0; j < n; j++) {
 		if ((j == goal_var) && (sys.goal!= NULL))
@@ -347,7 +347,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 		box[j]=inf_x? savebox[j].lb():savebox[j].ub();
 		Interval a = ((inf_x && (op == LEQ || op== LT)) ||
 				(!inf_x && (op == GEQ || op== GT)))	? G[j].lb() : G[j].ub();
-		row1[j] =  a.mid();
+		row1[j] +=  a.mid();
 		ev -= a*box[j];
 
 	}
@@ -410,7 +410,7 @@ void CtcXNewtonIter::gradient_computation (IntervalVector& box, IntervalVector& 
 		for (int i=0; i<sys.nb_var-1; i++)
 			G[i]=G1[i];
 
-		G[sys.nb_var-1]=0;
+		G[goal_var]=0; //G[sys.nb_var-1]=0;
 	}
 
 	else
