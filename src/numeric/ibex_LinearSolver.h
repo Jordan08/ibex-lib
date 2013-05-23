@@ -17,6 +17,7 @@
 
 
 #include <string.h>
+#include <stdio.h>
 #include "ibex_Vector.h"
 #include "ibex_Matrix.h"
 #include "ibex_IntervalVector.h"
@@ -64,11 +65,11 @@ public:
 	static const double default_max_diam_box;
 
 
-	typedef enum  {OPTIMAL, INFEASIBLE, UNKNOWN, TIME_OUT, MAX_ITER } Status_Sol;
+	typedef enum  {OPTIMAL=1, INFEASIBLE=2, UNKNOWN=0, TIME_OUT=-1, MAX_ITER=-2 } Status_Sol;
 
 	typedef enum  {MINIMIZE, MAXIMIZE} Sense;
 
-	typedef enum {OK, FAIL} Status;
+	typedef enum {OK=1, FAIL=0} Status;
 
 	LinearSolver(int nb_vars, int nb_ctr, int max_iter= default_max_iter,
 			int max_time_out= default_max_time_out, double eps=default_eps);
@@ -123,7 +124,12 @@ public:
 
 	Status addConstraint(Vector & row, CmpOp sign, double rhs );
 
+
+
 };
+
+/** \brief Stream out \a x. */
+std::ostream& operator<<(std::ostream& os, const LinearSolver::Status_Sol x);
 
 
 } // end namespace ibex

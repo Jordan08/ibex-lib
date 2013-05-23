@@ -76,14 +76,19 @@ CtcXNewtonIter::~CtcXNewtonIter() {
 void CtcXNewtonIter::contract (IntervalVector & box){
 	if (box.max_diam() > max_diam_box) return; // is it necessary?  YES (BNE) Soplex can give false infeasible results with large numbers
 
-	IntervalVector initbox(box);
-	//returns the number of constraints in the linearized system
-
 	try {
+		//returns the number of constraints in the linearized system
 		int cont = linearization(box);
+
 		if(cont<1)  return;
 		optimizer(box);
+
+//		mylinearsolver->writeFile("LP.lp");
+//		system ("cat dump.lp");
+
 		mylinearsolver->cleanConst();
+
+
 	}
 	catch(EmptyBoxException& ){
 		box.set_empty(); // empty the box before exiting in case of EmptyBoxException
@@ -114,7 +119,7 @@ int CtcXNewtonIter::linearization( IntervalVector & box)  {
 			for(int j=0; j<4; j++)
 				cont += X_Linearization(box, ctr, K4, G, j, nb_nonlinear_vars);
 		}else  //  linearizations k corners per constraint
-			for(int k=0;k<cpoints.size();k++){
+			for(int k=0;k<(cpoints.size());k++){
 				cont += X_Linearization(box, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
 
 			}
@@ -177,7 +182,7 @@ int CtcXNewtonIter::X_Linearization(IntervalVector& box,
 		row1[goal_var] += -1.0;
 	}
 	for (int j = 0; j < n; j++) {
-		if ((j == goal_var) && (sys.goal!= NULL))
+		if ((j == goal_var) && (goal_ctr > -1))
 			continue; //the variable y!
 
 		if (sys.ctrs[ctr].f.used(j)) {

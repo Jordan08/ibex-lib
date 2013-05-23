@@ -78,7 +78,7 @@ namespace ibex {
     LinearSolver *mylinearsolver;
 
     /*Neumaier Shcherbina postprocessing in case of optimal solution found : the result obj is made reliable */
-    void NeumaierShcherbina_postprocessing (int var, Interval & obj, IntervalVector& box, Matrix & As, IntervalVector& B, LinearSolver::Sense minimization, Vector &dual_solution);
+    void NeumaierShcherbina_postprocessing (int var, Interval & obj, IntervalVector& box, Matrix & As, IntervalVector& B,  Vector &dual_solution);
 
     /* Neumaier Shcherbina postprocessing in case of infeasibilty found by LP  returns true if the infeasibility is proved */
     bool  NeumaierShcherbina_infeasibilitytest ( IntervalVector& box, Matrix & As, IntervalVector& B, Vector & infeasible_dir);

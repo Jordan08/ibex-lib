@@ -78,7 +78,7 @@ LinearSolver::Status_Sol LinearSolver::solve() {
 	}catch(soplex::SPxException&){
 		res = UNKNOWN;
 	}
-
+//std::cout <<"	stat soplex  "<<stat<<"   "<<res << std::endl;
 	return res;
 
 }
@@ -150,8 +150,8 @@ LinearSolver::Status  LinearSolver::getB(IntervalVector& B) {
 
 		// Get the bounds of the constraints
 		for (int i=nb_vars;i<nb_rows; i++){
-			B[i]=Interval( (mysoplex->lhs(i)!=-soplex::infinity)? mysoplex->lhs(i):-default_max_bound,
-					(mysoplex->rhs(i)!= soplex::infinity)? mysoplex->rhs(i): default_max_bound   );
+			B[i]=Interval( 	(mysoplex->lhs(i)!=-soplex::infinity)? mysoplex->lhs(i):-default_max_bound,
+							(mysoplex->rhs(i)!= soplex::infinity)? mysoplex->rhs(i): default_max_bound   );
 			//Idea: replace 1e20 (resp. -1e20) by Sup([g_i]) (resp. Inf([g_i])), where [g_i] is an evaluation of the nonlinear function <-- IA
 			//           cout << B(i+1) << endl;
 		}
@@ -188,16 +188,15 @@ LinearSolver::Status LinearSolver::getDualSol(Vector & dual_solution) {
 		soplex::DVector dual(nb_rows);
 		mysoplex->getDual(dual);
 
-		for (int i=0; i< nb_rows ; i++)
-			dual_solution[i]=dual[i];
-
 		// TODO  WHY ?? Can you justify ?
 		for (int i =0; i< nb_rows ; i++)
 		{
-			if	((mysoplex->rhs(i)>=default_max_bound && (dual_solution[i]<0) ) ||
+			if	(	(mysoplex->rhs(i)>=default_max_bound && (dual_solution[i]<0) ) ||
 					(mysoplex->lhs(i)<=-default_max_bound && (dual_solution[i]>0) )) {//Modified by IA
 				dual_solution[i]=0;
 			}
+			else
+				dual_solution[i]=dual[i];
 		}
 
 		res =OK;
@@ -215,9 +214,18 @@ LinearSolver::Status LinearSolver::getInfeasibleDir(Vector & sol) {
 		soplex::DVector sol_found(nb_rows);
 		stat1 = mysoplex->getDualfarkas(sol_found);
 
-		if (stat1==soplex::SPxSolver::OPTIMAL) {
-			for (int i=0; i< nb_rows ; i++) {
-				sol[i]=sol_found[i];
+		if (stat1==soplex::SPxSolver::OPTIMAL) // TODO I'm not sure of the value that return getDualfarkas
+		{
+
+			// TODO  WHY ?? Can you justify ?
+			for (int i =0; i< nb_rows ; i++)
+			{
+				if	(	(mysoplex->rhs(i)>=default_max_bound && (sol_found[i]<0) ) ||
+						(mysoplex->lhs(i)<=-default_max_bound && (sol_found[i]>0) )) {//Modified by IA
+					sol[i]=0;
+				}
+				else
+					sol[i]=sol_found[i];
 			}
 			res =OK;
 		}
@@ -237,7 +245,7 @@ LinearSolver::Status LinearSolver::cleanConst() {
 	try {
 		mysoplex->removeRowRange(nb_vars, nb_rows-1);
 		nb_rows = nb_vars;
-		obj_value = POS_INFINITY; //TODO
+		obj_value = POS_INFINITY;
 		res= OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -251,7 +259,7 @@ LinearSolver::Status LinearSolver::cleanAll() {
 	try {
 		mysoplex->removeRowRange(0, nb_rows-1);
 		nb_rows = 0;
-		obj_value = POS_INFINITY; //TODO
+		obj_value = POS_INFINITY;
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -312,7 +320,7 @@ LinearSolver::Status LinearSolver::setSense(Sense s) {
 LinearSolver::Status LinearSolver::setVarObj(int var, double coef) {
 	LinearSolver::Status res= FAIL;
 	try {
-		mysoplex->changeObj(var, 1.0);
+		mysoplex->changeObj(var, coef);
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -340,6 +348,8 @@ LinearSolver::Status LinearSolver::setBoundVar(int var, Interval bound) {
 	LinearSolver::Status res= FAIL;
 	try {
 		mysoplex->changeRange(var ,bound.lb(),bound.ub());
+
+		//std::cout<< "improve bound var "<<var<< std::endl;
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -390,7 +400,44 @@ LinearSolver::Status LinearSolver::addConstraint(ibex::Vector& row, CmpOp sign, 
 	return res;
 }
 
-#endif
+
+
+
+
+
+
+#endif  // END DEF with SOPLEX
+
+
+/** \brief Stream out \a x. */
+std::ostream& operator<<(std::ostream& os, const LinearSolver::Status_Sol x){
+
+	switch(x) {
+	case(LinearSolver::OPTIMAL) :{
+			os << "OPTIMAL";
+			break;
+	}
+	case(LinearSolver::INFEASIBLE) :{
+			os << "INFEASIBLE";
+			break;
+	}
+	case(LinearSolver::TIME_OUT) :{
+			os << "TIME_OUT";
+			break;
+	}
+	case(LinearSolver::MAX_ITER) :{
+			os << "MAX_ITER";
+			break;
+	}
+	case(LinearSolver::UNKNOWN) :{
+		os << "UNKNOWN";
+		break;
+	}
+	}
+	return os;
+
+}
+
 
 } // end namespace ibex
 

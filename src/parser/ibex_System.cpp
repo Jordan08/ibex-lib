@@ -100,10 +100,11 @@ System::System(const System& sys, copy_mode mode) : nb_var(0), nb_ctr(0), func(0
 	// -------------------------------------------------------------
 
 	// ---------- duplicate the goal function ----------------
-	if (sys.goal!=NULL && mode!=EXTEND)
+	//if (sys.goal!=NULL && mode!=EXTEND)
+	if (sys.goal!=NULL)
 		goal = new Function(*sys.goal);
-	else
-		goal = NULL;
+	//else
+	//	goal = NULL;
 
 	// ---------- create the constraints sys.ctrs ----------------
 	if (mode==COPY) {

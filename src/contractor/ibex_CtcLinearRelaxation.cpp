@@ -20,12 +20,12 @@ CtcLinearRelaxation::CtcLinearRelaxation(const System& sys1,
 		 sys(sys1),
 		 cmode(cmode),
 		 max_diam_box(max_diam_box1)
-//		 , primal_solution(sys.nb_var)
-//		 , mylinearsolver(sys.nb_var, sys.nb_ctr, max_iter, time_out, eps)
 {
-
+// TODO Attention  sys1.goal ==NULL  si le systeme est copie en mode=EXTEND???
 	goal_ctr= (sys1.goal!=NULL) ? 0 : -1 ;  // TODO to modify with the value store in System
 	goal_var= (sys1.goal!=NULL) ? (sys1.nb_var-1) : -1 ;  // TODO to modify with the value store in System
+
+
 	mylinearsolver = new LinearSolver(sys1.nb_var, sys1.nb_ctr, max_iter, time_out, eps);
 }
 
@@ -54,7 +54,7 @@ void CtcLinearRelaxation::optimizer(IntervalVector & box){
 	for(int ii=firsti;ii<(2*sys.nb_var);ii++){  // at most 2*n calls
 		int i= ii/2;
 		if (nexti != -1) i=nexti;
-//  cout << " i "<< i << " infnexti " << infnexti << " infbound " << inf_bound[i] << " supbound " << sup_bound[i] << endl;
+//  std::cout << " i "<< i << " infnexti " << infnexti << " infbound " << inf_bound[i] << " supbound " << sup_bound[i] << std::endl;
 
 		if (infnexti==0 && inf_bound[i]==0)  // computing the left bound : minimizing x_i
 		{
@@ -158,10 +158,7 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 	else
 		mylinearsolver->setVarObj(var, -1.0);
 
-	//    mylinearsolver->writeFile("dump.lp");
-	//    system("cat dump.lp");
 	LinearSolver::Status_Sol stat = mylinearsolver->solve();
-
 
 	if(stat == LinearSolver::OPTIMAL){
 		if( ((sense==LinearSolver::MINIMIZE) && (  mylinearsolver->getObjValue() <=bound)) ||
@@ -184,11 +181,10 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 		IntervalVector B(mylinearsolver->getNbRows());
 		LinearSolver::Status stat_B = mylinearsolver->getB(B);
 
-		if (stat_dual==LinearSolver::OK && stat_A==LinearSolver::OK && stat_B==LinearSolver::OK)
-			NeumaierShcherbina_postprocessing( var, obj, box, A_trans, B, LinearSolver::MINIMIZE,dual_solution);
+		if ((stat_dual==LinearSolver::OK) && (stat_A==LinearSolver::OK) && (stat_B==LinearSolver::OK))
+			NeumaierShcherbina_postprocessing( var, obj, box, A_trans, B, dual_solution);
 		else
-			stat = LinearSolver::INFEASIBLE;
-
+			stat = LinearSolver::UNKNOWN;
 
 	}
 
@@ -206,15 +202,17 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 		IntervalVector B(mylinearsolver->getNbRows());
 		LinearSolver::Status stat3 = mylinearsolver->getB(B);
 
-		if (stat1==LinearSolver::OK && stat2==LinearSolver::OK && stat3==LinearSolver::OK &&
-				NeumaierShcherbina_infeasibilitytest ( box, A_trans, B, infeasible_dir))
+		if ((stat1==LinearSolver::OK) && (stat2==LinearSolver::OK) && (stat3==LinearSolver::OK) &&
+				NeumaierShcherbina_infeasibilitytest ( box, A_trans, B, infeasible_dir)       )
 		{
 			stat = LinearSolver::INFEASIBLE;
 		}
 	}
 
-
+	// Reset the objective of the LP solver
 	mylinearsolver->setVarObj(var, 0.0);
+
+//std::cout <<"	stat ==="<<stat<<std::endl;
 
 	return stat;
 
@@ -225,18 +223,16 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 
 // Neumaier Shcherbina postprocessing in case of optimal solution found : the result obj is made reliable
 void CtcLinearRelaxation::NeumaierShcherbina_postprocessing ( int var, Interval & obj, IntervalVector& box,
-		Matrix & A_trans, IntervalVector& B, LinearSolver::Sense minimization, Vector & dual_solution) {
+		Matrix & A_trans, IntervalVector& B, Vector & dual_solution) {
 
+//std::cout <<" BOUND_test "<<std::endl;
 	IntervalVector Rest(sys.nb_var);
-	for (int i =0; i< sys.nb_var ; i++)
-		Rest[i] = A_trans.row(i) * dual_solution ; // Rest = Transpose(A)*Lambda
 
-	Rest[var] += ( (minimization==LinearSolver::MINIMIZE)? -1 : 1); // because C is a vector of zero except for the coef "var"
+	Rest = A_trans * dual_solution ;   // Rest = Transpose(As) * Lambda
+	Rest[var] -=1; // because C is a vector of zero except for the coef "var"
 
-	if (minimization==LinearSolver::MINIMIZE)
-		obj = dual_solution * B - Rest * box;
-	else
-		obj = -(dual_solution * B - Rest * box);
+	obj = dual_solution * B - Rest * box;
+
 }
 
 
@@ -246,16 +242,14 @@ bool  CtcLinearRelaxation::NeumaierShcherbina_infeasibilitytest ( IntervalVector
 {
 
 	IntervalVector Rest(sys.nb_var);
-	for (int i =0; i< sys.nb_var; i++)
-		Rest[i] = A_trans.row(i) * infeasible_dir ;  // Rest = Transpose(As) * Lambda
-
+	Rest = A_trans * infeasible_dir ;
 	Interval d= Rest *box - infeasible_dir * B;
 
 	// if 0 does not belong to d, the infeasibility is proved
-	if ((d.lb() > 0) ||( d.ub() <0))
-		return true;
-	else
+	if (d.contains(0.0))
 		return false;
+	else
+		return true;
 }
 
 
@@ -286,7 +280,7 @@ bool CtcLinearRelaxation::choose_next_variable ( IntervalVector & box,
 		// and updating the indicators if a bound has been found feasible (with the precision prec_bound)
 		// called only when a primal solution is found by the LP solver (use of primal_solution)
 
-		double prec_bound = mylinearsolver->getEpsilon(); // relative precision for the indicators TODO change with the precision of the optimizer
+		double prec_bound = mylinearsolver->getEpsilon(); // relative precision for the indicators TODO change with the precision of the optimizer ??
 		double delta=1.e100;
 		double deltaj=delta;
 
@@ -327,7 +321,6 @@ bool CtcLinearRelaxation::choose_next_variable ( IntervalVector & box,
 				nexti=j;   infnexti=0; found = true;
 				break;
 			}
-
 			else if  (sup_bound[j]==0) {
 				nexti=j;  infnexti=1; found = true;
 				break;
