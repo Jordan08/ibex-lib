@@ -63,6 +63,7 @@ LinearSolver::Status_Sol LinearSolver::solve() {
 	try{
 		stat = mysoplex->solve();
 		if (stat==soplex::SPxSolver::OPTIMAL) {
+		  //		  std::cout << " obj value " << mysoplex->objValue() << std::endl;
 			obj_value = mysoplex->objValue();
 			res= OPTIMAL;
 		}
@@ -188,17 +189,10 @@ LinearSolver::Status LinearSolver::getDualSol(Vector & dual_solution) {
 		soplex::DVector dual(nb_rows);
 		mysoplex->getDual(dual);
 
-		// TODO  WHY ?? Can you justify ?
 		for (int i =0; i< nb_rows ; i++)
-		{
-			if	(	(mysoplex->rhs(i)>=default_max_bound && (dual_solution[i]<0) ) ||
-					(mysoplex->lhs(i)<=-default_max_bound && (dual_solution[i]>0) )) {//Modified by IA
-				dual_solution[i]=0;
-			}
-			else
-				dual_solution[i]=dual[i];
-		}
-
+		  dual_solution[i]=dual[i];
+		
+		
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {
@@ -213,24 +207,15 @@ LinearSolver::Status LinearSolver::getInfeasibleDir(Vector & sol) {
 		soplex::SPxSolver::Status stat1;
 		soplex::DVector sol_found(nb_rows);
 		stat1 = mysoplex->getDualfarkas(sol_found);
+		// if (stat1==soplex::SPxSolver::OPTIMAL) // TODO I'm not sure of the value that return getDualfarkas : this condition does not work BNE
 
-		if (stat1==soplex::SPxSolver::OPTIMAL) // TODO I'm not sure of the value that return getDualfarkas
-		{
+		
+		for (int i =0; i< nb_rows ; i++)
+		  sol[i]=sol_found[i];
+		
+		res =OK;
+		//	else	res = FAIL; this condition does not work BNE
 
-			// TODO  WHY ?? Can you justify ?
-			for (int i =0; i< nb_rows ; i++)
-			{
-				if	(	(mysoplex->rhs(i)>=default_max_bound && (sol_found[i]<0) ) ||
-						(mysoplex->lhs(i)<=-default_max_bound && (sol_found[i]>0) )) {//Modified by IA
-					sol[i]=0;
-				}
-				else
-					sol[i]=sol_found[i];
-			}
-			res =OK;
-		}
-		else
-			res = FAIL;
 
 	}
 	catch(soplex::SPxException& ) {
@@ -349,7 +334,7 @@ LinearSolver::Status LinearSolver::setBoundVar(int var, Interval bound) {
 	try {
 		mysoplex->changeRange(var ,bound.lb(),bound.ub());
 
-		//std::cout<< "improve bound var "<<var<< std::endl;
+		//std::cout << "improve bound var "<<var<< std::endl;
 		res =OK;
 	}
 	catch(soplex::SPxException& ) {

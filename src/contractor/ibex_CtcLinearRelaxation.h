@@ -78,10 +78,10 @@ namespace ibex {
     LinearSolver *mylinearsolver;
 
     /*Neumaier Shcherbina postprocessing in case of optimal solution found : the result obj is made reliable */
-    void NeumaierShcherbina_postprocessing (int var, Interval & obj, IntervalVector& box, Matrix & As, IntervalVector& B,  Vector &dual_solution);
+    void NeumaierShcherbina_postprocessing (int nr, int var, Interval & obj, IntervalVector& box, IntervalMatrix & As, IntervalVector& B,  Vector &dual_solution, bool minimization);
 
     /* Neumaier Shcherbina postprocessing in case of infeasibilty found by LP  returns true if the infeasibility is proved */
-    bool  NeumaierShcherbina_infeasibilitytest ( IntervalVector& box, Matrix & As, IntervalVector& B, Vector & infeasible_dir);
+    bool  NeumaierShcherbina_infeasibilitytest ( int nr, IntervalVector& box, IntervalMatrix & As, IntervalVector& B, Vector & infeasible_dir);
 
     /* Achterberg heuristic for choosing the next variable  and which bound to optimize */
     bool choose_next_variable ( IntervalVector &box,  int & nexti, int & infnexti, int* inf_bound, int* sup_bound);
