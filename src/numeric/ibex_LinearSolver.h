@@ -14,6 +14,7 @@
 
 
 #define _IBEX_WITH_SOPLEX_ 1
+//#define _IBEX_WITH_CPLEX_ 1
 
 
 #include <string.h>
@@ -27,6 +28,9 @@
 #include "soplex.h"
 #endif
 
+#ifdef _IBEX_WITH_CPLEX_
+#include "cplex.h"
+#endif
 
 namespace ibex {
 
@@ -48,6 +52,15 @@ private:
 	soplex::SoPlex *mysoplex;
 #endif
 
+#ifdef _IBEX_WITH_CPLEX_
+	CPXENVptr  envcplex;
+	CPXLPptr lpcplex;
+	int * indice;
+	double * 	tmp;
+	int *  		cmatbeg;
+	double *  	cmatval;
+	int * 		cmatind;
+#endif
 
 public:
 

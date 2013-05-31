@@ -41,6 +41,8 @@ def options (opt):
 			help = "location of the filib lib")
 	opt.add_option ("--with-soplex", action="store", type="string", dest="SOPLEX_PATH",
 			help = "location of the Soplex lib")
+	opt.add_option ("--with-cplex", action="store", type="string", dest="CPLEX_PATH",
+			help = "location of the Cplex lib")
 
 	opt.add_option ("--with-jni", action="store_true", dest="WITH_JNI",
 			help = "enable the compilation of the JNI adapter (note: your JAVA_HOME environment variable must be properly set if you want to use this option)")
@@ -141,8 +143,29 @@ def configure (conf):
 				break
 		else:
 			conf.fatal ("cannot link with the Soplex library")
-	else:
-		conf.fatal ("cannot find the Soplex library, please use --with-soplex=SOPLEX_PATH")
+			
+	# CPLEX lib
+	path = candidate_lib_path ("CPLEX_PATH", "cplex")
+	if path:
+		conf.msg ("Candidate directory for lib Cplex", path)
+
+		env.append_unique ("INCLUDES",  os.path.join (path, "include/ilcplex"))
+
+		conf.check_cxx (header_name	= "cplex.h")
+
+		if (not(conf.check_cxx (lib = ["cplex", "pthread"], uselib_store = "IBEX_DEPS",
+				libpath = [os.path.join (path, "lib/x86-64_sles10_4.1/static_pic")],
+				mandatory = False,
+				fragment = """
+					#include <cplex.h>
+					int main (int argc, char* argv[]) {
+						CPXENVptr  envcplex;
+						CPXLPptr lpcplex;
+						return 0;
+					}
+				"""))):
+			conf.fatal ("cannot link with the Cplex library")			
+			
 
 
 	# JNI
