@@ -9,7 +9,7 @@
 //============================================================================
 
 #include "ibex_CtcXNewtonIter.h"
-
+using namespace std;
 
 namespace ibex {
 
@@ -75,7 +75,7 @@ CtcXNewtonIter::~CtcXNewtonIter() {
 
 void CtcXNewtonIter::contract (IntervalVector & box){
 	if (box.max_diam() > max_diam_box) return; // is it necessary?  YES (BNE) Soplex can give false infeasible results with large numbers
-
+	//		cout << " box before XNewtonIter " << box << endl;
 	try {
 		//returns the number of constraints in the linearized system
 		int cont = linearization(box);
@@ -83,15 +83,15 @@ void CtcXNewtonIter::contract (IntervalVector & box){
 		if(cont<1)  return;
 		optimizer(box);
 
-//		mylinearsolver->writeFile("LP.lp");
-//		system ("cat dump.lp");
-
+		//	mylinearsolver->writeFile("LP.lp");
+		//		system ("cat dump.lp");
+		//cout << " box after  XNewtonIter " << box << endl;
 		mylinearsolver->cleanConst();
-
 
 	}
 	catch(EmptyBoxException& ){
 		box.set_empty(); // empty the box before exiting in case of EmptyBoxException
+		mylinearsolver->cleanConst();
 		throw EmptyBoxException();
 	}
 
@@ -104,6 +104,7 @@ int CtcXNewtonIter::linearization( IntervalVector & box)  {
 	int cont =0;
 	// Update the bounds the variables
 	mylinearsolver->initBoundVar(box);
+
 
 	// Create the linear relaxation of each constraint
 	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
@@ -123,10 +124,8 @@ int CtcXNewtonIter::linearization( IntervalVector & box)  {
 				cont += X_Linearization(box, ctr, cpoints[k],  G, k, nb_nonlinear_vars);
 
 			}
-
 	}
 	return cont;
-
 }
 
 
