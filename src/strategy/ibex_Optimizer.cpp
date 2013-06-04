@@ -261,7 +261,7 @@ void Optimizer::optimize(const IntervalVector& init_box) {
 						ymax = loup - goal_abs_prec;
 					((CellHeap&) buffer ).contract_heap(ymax);
 					if (ymax <=-DBL_MAX) {
-						cout << " infinite value for the minimum " << endl;
+						if (trace) cout << " infinite value for the minimum " << endl;
 						break;
 					}
 					if (trace) cout << setprecision(12) << "ymax=" << ymax << " uplo= " <<  uplo << endl;
@@ -302,7 +302,7 @@ void Optimizer::optimize(const IntervalVector& init_box) {
 		}
 	}
 	catch (TimeOutException& ) {
-		if (trace>0) {
+		if (trace) {
 			cout << "time limit " << timeout << "s. reached " << endl;
 			return;
 		}
@@ -377,7 +377,8 @@ void Optimizer::report_perf() {
 
 	cout << (	((rel_prec <= goal_rel_prec)||
 				(abs_prec <= goal_abs_prec)||
-				((buffer.empty() && uplo_of_epsboxes == POS_INFINITY && loup==POS_INFINITY))
+				((buffer.empty() && uplo_of_epsboxes == POS_INFINITY && loup==POS_INFINITY))||
+				(uplo<-1.e300)
 			)? " T & " : " F & " );
 
 	cout << uplo << " & " << loup << " & ";

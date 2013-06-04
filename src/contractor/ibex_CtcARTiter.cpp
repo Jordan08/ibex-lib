@@ -83,16 +83,15 @@ int CtcARTiter::linearization(IntervalVector & box) {
 			 std::cout<< "CONST :"<< af2<<std::endl;
 
 			 }*/
-			// TODO To check
 			ev = sys.goal->eval_affine2(box, af2);
 
 			if (af2.size() > 0) {
 				for (int i = 0; i < sys.nb_var - 1; i++) {
 					rowconst[i] = af2.val(i + 1);
 				}
-				stat = mylinearsolver->addConstraint(rowconst, GEQ,	((Interval::ONE * af2.err() - af2.val(0)+ box[goal_var].lb())).lb());
+				stat = mylinearsolver->addConstraint(rowconst, GEQ,	((- af2.err() - af2.val(0)+ box[goal_var].lb())).lb());
 				if (stat == LinearSolver::OK)	cont++;
-				stat = mylinearsolver->addConstraint(rowconst, LEQ,	((Interval::ONE * af2.err() - af2.val(0)+ box[goal_var].ub())).ub());
+				stat = mylinearsolver->addConstraint(rowconst, LEQ,	(( af2.err() - af2.val(0)+ box[goal_var].ub())).ub());
 				if (stat == LinearSolver::OK)	cont++;
 			}
 
@@ -111,7 +110,7 @@ int CtcARTiter::linearization(IntervalVector & box) {
 						for (int i = 0; i < sys.nb_var; i++) {
 							rowconst[i] = af2.val(i + 1);
 						}
-						stat = mylinearsolver->addConstraint(rowconst, LEQ,((Interval::ONE * af2.err() - af2.val(0))).ub());
+						stat = mylinearsolver->addConstraint(rowconst, LEQ,(( af2.err() - af2.val(0))).ub());
 						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;
@@ -125,7 +124,7 @@ int CtcARTiter::linearization(IntervalVector & box) {
 							rowconst[i] = af2.val(i + 1);
 						}
 						stat =
-								mylinearsolver->addConstraint(rowconst, GEQ,((Interval::ONE * af2.err() - af2.val(0))).lb());
+								mylinearsolver->addConstraint(rowconst, GEQ,((- af2.err() - af2.val(0))).lb());
 						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;
@@ -137,9 +136,9 @@ int CtcARTiter::linearization(IntervalVector & box) {
 						for (int i = 0; i < sys.nb_var; i++) {
 							rowconst[i] = af2.val(i + 1);
 						}
-						stat = mylinearsolver->addConstraint(rowconst, GEQ,	((Interval::ONE * af2.err() - af2.val(0))).lb()	);
+						stat = mylinearsolver->addConstraint(rowconst, GEQ,	((-af2.err() - af2.val(0))).lb()	);
 						if (stat == LinearSolver::OK)	cont++;
-						stat = mylinearsolver->addConstraint(rowconst, LEQ,	((Interval::ONE * af2.err() - af2.val(0))).ub() );
+						stat = mylinearsolver->addConstraint(rowconst, LEQ,	(( af2.err() - af2.val(0))).ub() );
 						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;

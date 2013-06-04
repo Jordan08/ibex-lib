@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
  */
 		double prec       = 1.e-6;
 		double goal_prec  = 1.e-6;
-		double time_limit = 1;
+		double time_limit = 30;
 
 		if (!sys.goal) {
 			ibex_error(" input file has not goal (it is not an optimization problem).");
