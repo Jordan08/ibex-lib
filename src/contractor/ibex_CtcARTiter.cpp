@@ -10,138 +10,137 @@
 
 #include "ibex_CtcARTiter.h"
 
-
 namespace ibex {
 
-
 // the constructor
-CtcARTiter::CtcARTiter(const System& sys1, 	ctc_mode cmode,
-		int max_iter1, int time_out1, double eps, double max_diam_box):
-			CtcLinearRelaxation(sys1,cmode,max_iter1,time_out1,eps, max_diam_box)
-{
-
+CtcARTiter::CtcARTiter(const System& sys1, ctc_mode cmode, int max_iter1,
+		int time_out1, double eps, double max_diam_box) :
+		CtcLinearRelaxation(sys1, cmode, max_iter1, time_out1, eps,
+				max_diam_box) {
 
 }
 
 CtcARTiter::~CtcARTiter() {
 
-
 }
 
-
-void CtcARTiter::contract (IntervalVector & box){
-	if (box.max_diam() > max_diam_box) return; // is it necessary?  YES (BNE) Soplex can give false infeasible results with large numbers
-
+void CtcARTiter::contract(IntervalVector & box) {
+	if (box.max_diam() > max_diam_box)
+		return; // is it necessary?  YES (BNE) Soplex can give false infeasible results with large numbers
 
 	try {
 		//std::cout<<" IN  " <<box<<std::endl;
 		//returns the number of constraints in the linearized system
 		int cont = linearization(box);
-		if(cont<1)  return;
+		if (cont < 1)
+			return;
 
-		IntervalVector epsilon(box.size(),Interval(-1,1));
+		IntervalVector epsilon(box.size(), Interval(-1, 1));
 		optimizer(epsilon);
 		mylinearsolver->cleanConst();
 
-		convert_back(box,epsilon);
+		convert_back(box, epsilon);
 
 		//std::cout<<"  OUT "<<box<<std::endl;
-	}
-	catch(EmptyBoxException& ){
+	} catch (EmptyBoxException&) {
 		//std::cout<<"  EMPTY "<<std::endl;
 		box.set_empty(); // empty the box before exiting in case of EmptyBoxException
+		mylinearsolver->cleanConst();
 		throw EmptyBoxException();
 	}
 
 }
 
-
 /*********generation of the linearized system*********/
-int CtcARTiter::linearization( IntervalVector & box)  {
+int CtcARTiter::linearization(IntervalVector & box) {
 
 	// Update the bounds the variables
-	mylinearsolver->initBoundVar(IntervalVector(box.size(),Interval(-1,1)));
+	mylinearsolver->initBoundVar(IntervalVector(box.size(), Interval(-1, 1)));
 
 	Affine2 af2;
 	Vector rowconst(sys.nb_var);
 	Interval ev(0.0);
 	CmpOp op;
-	int cont=0;
-	LinearSolver::Status stat=LinearSolver::OK;
+	int cont = 0;
+	LinearSolver::Status stat = LinearSolver::FAIL;
 
 	// Create the linear relaxation of each constraint
-	for(int ctr=0; ctr<sys.nb_ctr;ctr++){
+	for (int ctr = 0; ctr < sys.nb_ctr; ctr++) {
 
-		for (int i=0;i<sys.nb_var;i++)
+		for (int i = 0; i < sys.nb_var; i++)
 			rowconst[i] = 0.0;
 
 /////////////////:
-
+		af2 = 0.0;
 		if (goal_ctr == ctr) {
+
+			/*{
+			 std::cout<< " BOX = "<<box<<std::endl;
+			 Affine2 af2_;
+			 sys.goal->eval_affine2(box, af2_);
+			 sys.ctrs[ctr].f.eval_affine2(box, af2);
+			 std::cout<< "GOAL :"<< af2_<<std::endl;
+			 std::cout<< "CONST :"<< af2<<std::endl;
+
+			 }*/
 			// TODO To check
-			//op = LEQ;
-			//ev =sys.goal->eval_affine2(box, af2);
-			ev =sys.ctrs[ctr].f.eval_affine2(box, af2);
+			ev = sys.goal->eval_affine2(box, af2);
 
-			//std::cout<< ">> GOAL AFFINE2 = " <<af2<<std::endl << " ev ="<<ev<<std::endl;//<< " Bound ="<<box<<std::endl;
-
-			if (!ev.contains(0.0))   throw EmptyBoxException();
-			else  {
-				if (af2.size()>0) {
-					for (int i=0;i<sys.nb_var;i++) {
-						rowconst[i] = af2.val(i+1);
-					}
-					//	rowconst[goal_var] = -1.0;
-					//	stat = mylinearsolver->addConstraint( rowconst, GEQ, ((Interval::ONE*af2.err()-af2.val(0)) ).lb());
-					//	if (stat==LinearSolver::OK) cont++;
-					stat = mylinearsolver->addConstraint( rowconst, LEQ, ((Interval::ONE*af2.err()-af2.val(0))).ub() );
-					if (stat==LinearSolver::OK) cont++;
+			if (af2.size() > 0) {
+				for (int i = 0; i < sys.nb_var - 1; i++) {
+					rowconst[i] = af2.val(i + 1);
 				}
+				stat = mylinearsolver->addConstraint(rowconst, GEQ,	((Interval::ONE * af2.err() - af2.val(0)+ box[goal_var].lb())).lb());
+				if (stat == LinearSolver::OK)	cont++;
+				stat = mylinearsolver->addConstraint(rowconst, LEQ,	((Interval::ONE * af2.err() - af2.val(0)+ box[goal_var].ub())).ub());
+				if (stat == LinearSolver::OK)	cont++;
 			}
-		}
-		else {
-			ev =sys.ctrs[ctr].f.eval_affine2(box, af2);
-			op= sys.ctrs[ctr].op;
-			if (af2.size()>0) {
+
+		} else {
+			ev = sys.ctrs[ctr].f.eval_affine2(box, af2);
+			op = sys.ctrs[ctr].op;
+			if (af2.size() > 0) {
 				//the affine2 form is valid
 
 				switch (op) {
 				case LEQ:
-					if (0.0==ev.lb())   throw EmptyBoxException();
+					if (0.0 == ev.lb())	throw EmptyBoxException();
 				case LT: {
-					if (0.0<ev.lb())   throw EmptyBoxException();
-					else if (0.0<ev.ub()) {
-						for (int i=0;i<sys.nb_var;i++) {
-							rowconst[i] = af2.val(i+1);
+					if (0.0 < ev.lb())	throw EmptyBoxException();
+					else if (0.0 < ev.ub()) {
+						for (int i = 0; i < sys.nb_var; i++) {
+							rowconst[i] = af2.val(i + 1);
 						}
-						stat = mylinearsolver->addConstraint( rowconst, LEQ, ((Interval::ONE*af2.err()-af2.val(0))).ub() );
-						if (stat==LinearSolver::OK) cont++;
+						stat = mylinearsolver->addConstraint(rowconst, LEQ,((Interval::ONE * af2.err() - af2.val(0))).ub());
+						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;
 				}
 				case GEQ:
-					if (ev.ub()==0.0)   throw EmptyBoxException();
+					if (ev.ub() == 0.0)	throw EmptyBoxException();
 				case GT: {
-					if (ev.ub()<0.0)   throw EmptyBoxException();
-					else if (ev.lb()<0.0) {
-						for (int i=0;i<sys.nb_var;i++) {
-							rowconst[i] = af2.val(i+1);
+					if (ev.ub() < 0.0)	throw EmptyBoxException();
+					else if (ev.lb() < 0.0) {
+						for (int i = 0; i < sys.nb_var; i++) {
+							rowconst[i] = af2.val(i + 1);
 						}
-						stat = mylinearsolver->addConstraint( rowconst, GEQ, ((Interval::ONE*af2.err()-af2.val(0))).lb() );
-						if (stat==LinearSolver::OK) cont++;
+						stat =
+								mylinearsolver->addConstraint(rowconst, GEQ,((Interval::ONE * af2.err() - af2.val(0))).lb());
+						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;
 				}
-				case EQ : {
-					if (!ev.contains(0.0))   throw EmptyBoxException();
-					else  {
-						for (int i=0;i<sys.nb_var;i++) {
-							rowconst[i] = af2.val(i+1);
+				case EQ: {
+					if (!ev.contains(0.0))
+						throw EmptyBoxException();
+					else {
+						for (int i = 0; i < sys.nb_var; i++) {
+							rowconst[i] = af2.val(i + 1);
 						}
-						stat = mylinearsolver->addConstraint( rowconst, GEQ, ((Interval::ONE*af2.err()-af2.val(0)) ).lb());
-						if (stat==LinearSolver::OK) cont++;
-						stat = mylinearsolver->addConstraint( rowconst, LEQ, ((Interval::ONE*af2.err()-af2.val(0))).ub() );
-						if (stat==LinearSolver::OK) cont++;
+						stat = mylinearsolver->addConstraint(rowconst, GEQ,	((Interval::ONE * af2.err() - af2.val(0))).lb()	);
+						if (stat == LinearSolver::OK)	cont++;
+						stat = mylinearsolver->addConstraint(rowconst, LEQ,	((Interval::ONE * af2.err() - af2.val(0))).ub() );
+						if (stat == LinearSolver::OK)	cont++;
 					}
 					break;
 				}
@@ -154,16 +153,12 @@ int CtcARTiter::linearization( IntervalVector & box)  {
 
 }
 
-
 void CtcARTiter::convert_back(IntervalVector & box, IntervalVector & epsilon) {
 
-	for (int i=0;i<box.size();i++) {
-		box[i] &= box[i].mid() + box[i].rad() *epsilon[i];
+	for (int i = 0; i < box.size(); i++) {
+		box[i] &= box[i].mid() + (box[i].rad() * epsilon[i]);
 	}
 
 }
-
-
-
 
 }

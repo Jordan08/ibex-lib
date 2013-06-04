@@ -85,6 +85,16 @@ public:
 	 */
 	void report();
 
+	/**
+	 * \brief Displays on standard output a report of the last call to #optimize(const IntervalVector&).
+	 *
+	 * Information provided:
+	 * <ul><li> interval of the cost  [uplo,loup]
+	 *     <li>total running time
+	 * </ul>
+	 */
+	void report_perf();
+
 	/** Number of variables. */
 	const int n;
 
