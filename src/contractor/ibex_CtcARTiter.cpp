@@ -72,17 +72,17 @@ int CtcARTiter::linearization(IntervalVector & box) {
 
 /////////////////:
 		af2 = 0.0;
-		if (goal_ctr == ctr) {
+/*		if (goal_ctr == ctr) {
 
-			/*{
-			 std::cout<< " BOX = "<<box<<std::endl;
-			 Affine2 af2_;
-			 sys.goal->eval_affine2(box, af2_);
-			 sys.ctrs[ctr].f.eval_affine2(box, af2);
-			 std::cout<< "GOAL :"<< af2_<<std::endl;
-			 std::cout<< "CONST :"<< af2<<std::endl;
+			{
+			// std::cout<< " BOX = "<<box<<std::endl;
+			// Affine2 af2_;
+			// sys.goal->eval_affine2(box, af2_);
+			// sys.ctrs[ctr].f.eval_affine2(box, af2);
+			// std::cout<< "GOAL :"<< af2_<<std::endl;
+			// std::cout<< "CONST :"<< af2<<std::endl;
 
-			 }*/
+			 }
 			ev = sys.goal->eval_affine2(box, af2);
 
 			if (af2.size() > 0) {
@@ -95,7 +95,8 @@ int CtcARTiter::linearization(IntervalVector & box) {
 				if (stat == LinearSolver::OK)	cont++;
 			}
 
-		} else {
+		} else */
+		{
 			ev = sys.ctrs[ctr].f.eval_affine2(box, af2);
 			op = sys.ctrs[ctr].op;
 			if (af2.size() > 0) {
