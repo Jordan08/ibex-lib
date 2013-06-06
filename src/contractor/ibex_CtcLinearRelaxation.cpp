@@ -54,8 +54,8 @@ void CtcLinearRelaxation::optimizer(IntervalVector & box){
 	for(int ii=firsti;ii<(2*sys.nb_var);ii++){  // at most 2*n calls
 		int i= ii/2;
 		if (nexti != -1) i=nexti;
-		//		cout << " i "<< i << " infnexti " << infnexti << " infbound " << inf_bound[i] << " supbound " << sup_bound[i] << std::endl;
-		//		cout << " box avant simplex " << box << endl;
+		//		cout << " i "<< i << " infnexti " << infnexti << " infbound " << inf_bound[i] << " supbound " << sup_bound[i] << endl;
+		//			cout << " box avant simplex " << box << endl;
 		if (infnexti==0 && inf_bound[i]==0)  // computing the left bound : minimizing x_i
 		{
 			inf_bound[i]=1;
@@ -81,6 +81,13 @@ void CtcLinearRelaxation::optimizer(IntervalVector & box){
 				// the infeasibility is proved, the EmptyBox exception is raised
 				throw EmptyBoxException();
 			}
+
+			else if (stat == LinearSolver::INFEASIBLE_NOTPROVED)
+			{
+				// the infeasibility is found but not proved, no other call is needed
+				break;
+			}
+
 			else if (stat == LinearSolver::UNKNOWN)
 			{
 				int next=-1;
@@ -122,6 +129,11 @@ void CtcLinearRelaxation::optimizer(IntervalVector & box){
 				// the infeasibility is proved,  the EmptyBox exception is raised
 				throw EmptyBoxException();
 			}
+			else if (stat == LinearSolver::INFEASIBLE_NOTPROVED)
+			  {
+				// the infeasibility is found but not proved, no other call is needed
+			    break;
+			  }
 
 			else if (stat == LinearSolver::UNKNOWN)
 			{
@@ -165,12 +177,13 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 	//	system("cat dump.lp");
 	LinearSolver::Status_Sol stat = mylinearsolver->solve();
 	//	cout << " stat solver " << stat << endl;
-	if(stat == LinearSolver::OPTIMAL){ //cout << " out of interval ? " <<  bound << " " << mylinearsolver->getObjValue() << endl;
+
+	if(stat == LinearSolver::OPTIMAL){
 		if( ((sense==LinearSolver::MINIMIZE) && (  mylinearsolver->getObjValue() <=bound)) ||
 			((sense==LinearSolver::MAXIMIZE) && ((-mylinearsolver->getObjValue())>=bound)) )
-		  {// cout << " out of interval " <<  bound << " " << mylinearsolver->getObjValue() << endl;
-			stat = LinearSolver::UNKNOWN;
-		}
+		  { 
+		    stat = LinearSolver::UNKNOWN;
+		  }
 	}
 
 	// Neumaier - Shcherbina postprocessing
@@ -194,8 +207,8 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 		bool minimization=false;
 		if (sense==LinearSolver::MINIMIZE) 
 		  minimization=true;
-		//		cout << "B " << B << endl;
-		//		cout << "A_trans " << IA_trans << endl;
+		//	  cout << "B " << B << endl;
+		//	  cout << "A_trans " << IA_trans << endl;
 
 		if ((stat_dual==LinearSolver::OK) && (stat_A==LinearSolver::OK) && (stat_B==LinearSolver::OK))
 		  NeumaierShcherbina_postprocessing( mylinearsolver->getNbRows(), var, obj, box, IA_trans, B, dual_solution, minimization);
@@ -205,9 +218,8 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 	}
 
 	// infeasibility test  cf Neumaier Shcherbina paper
-	if(stat == LinearSolver::INFEASIBLE)
+	if(stat == LinearSolver::INFEASIBLE_NOTPROVED)
 	{
-		stat = LinearSolver::UNKNOWN;
 
 		Vector infeasible_dir(mylinearsolver->getNbRows());
 		LinearSolver::Status stat1 = mylinearsolver->getInfeasibleDir(infeasible_dir);
@@ -264,10 +276,10 @@ LinearSolver::Status_Sol CtcLinearRelaxation::run_simplex(IntervalVector& box,
 	else
 	  Rest[var] +=1; 
 
-	//			cout << " Rest " << Rest << endl;
-	//			cout << " dual " << Lambda << endl;
-	//			cout << " dual B " << Lambda * B << endl;
-	//		      cout << " rest box " << Rest * box  << endl;
+	//	cout << " Rest " << Rest << endl;
+	//	cout << " dual " << Lambda << endl;
+	//	cout << " dual B " << Lambda * B << endl;
+	//	cout << " rest box " << Rest * box  << endl;
 	if(minimization==true) 
 	  obj = Lambda * B - Rest * box;
 	else
@@ -333,7 +345,7 @@ bool CtcLinearRelaxation::choose_next_variable ( IntervalVector & box,
 		// and updating the indicators if a bound has been found feasible (with the precision prec_bound)
 		// called only when a primal solution is found by the LP solver (use of primal_solution)
 
-	  //	double prec_bound = mylinearsolver->getEpsilon(); // relative precision for the indicators TODO change with the precision of the optimizer ??
+	  // double prec_bound = mylinearsolver->getEpsilon(); // relative precision for the indicators TODO change with the precision of the optimizer ??
 	  double prec_bound = 1.e-8; // relative precision for the indicators      :  compatibility for testing  BNE
 		double delta=1.e100;
 		double deltaj=delta;

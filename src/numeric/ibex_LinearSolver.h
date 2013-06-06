@@ -78,7 +78,7 @@ public:
 	static const double default_max_diam_box;
 
 
-	typedef enum  {OPTIMAL=1, INFEASIBLE=2, UNKNOWN=0, TIME_OUT=-1, MAX_ITER=-2 } Status_Sol;
+	typedef enum  {OPTIMAL=1, INFEASIBLE=2, INFEASIBLE_NOTPROVED=3, UNKNOWN=0, TIME_OUT=-1, MAX_ITER=-2} Status_Sol;
 
 	typedef enum  {MINIMIZE, MAXIMIZE} Sense;
 

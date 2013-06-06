@@ -61,25 +61,24 @@ LinearSolver::Status_Sol LinearSolver::solve() {
 	LinearSolver::Status_Sol res= UNKNOWN;
 
 	try{
-		stat = mysoplex->solve();
+	        stat = mysoplex->solve();
 		if (stat==soplex::SPxSolver::OPTIMAL) {
-		  //		  std::cout << " obj value " << mysoplex->objValue() << std::endl;
-			obj_value = mysoplex->objValue();
-			res= OPTIMAL;
+		  obj_value = mysoplex->objValue();
+		  res= OPTIMAL;
 		}
 		else if (stat==soplex::SPxSolver::ABORT_TIME)
 			res = TIME_OUT;
 		else if (stat==soplex::SPxSolver::ABORT_ITER)
 			res = MAX_ITER;
 		else if (stat==soplex::SPxSolver::INFEASIBLE)
-			res = INFEASIBLE;
+			res = INFEASIBLE_NOTPROVED;
 		else
 			res = UNKNOWN;
 
 	}catch(soplex::SPxException&){
 		res = UNKNOWN;
 	}
-//std::cout <<"	stat soplex  "<<stat<<"   "<<res << std::endl;
+	//	std::cout <<"	stat soplex  "<<stat<<"   "<<res << std::endl;
 	return res;
 
 }
