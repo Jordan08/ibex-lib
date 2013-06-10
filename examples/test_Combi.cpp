@@ -44,6 +44,15 @@ int main(int argc, char** argv) {
 		CtcCompo hc4acidhc4(hc4, acidhc4);
 
 
+		// the linear relaxation contractor: ART
+		CtcARTiter ctcart(ext_sys);
+		// ART linear relaxation , hc4  with default fix point ratio 0.2
+		CtcART ca(ctcart, hc44xn);
+		//  the actual contractor  ctc + ART
+		CtcCompo ctc_art(hc4acidhc4, ca);
+		// one point probed when looking for a new feasible point (updating the loup)
+
+
 		// The CtcXNewtonIter contractor
 		// corner selection for linearizations : two corners are slected, a random one and its opposite
 		vector<CtcXNewtonIter::corner_point> cpoints;
@@ -58,10 +67,11 @@ int main(int argc, char** argv) {
 		//  the actual contractor  ctc + xnewton
 		CtcCompo ctc_xn (hc4acidhc4, cxn);
 
+		CtcCompo ctc_compo(ctc_xn,ctc_art);
 
 		int samplesize = 1;
 		// the optimizer : the same precision goal_prec is used as relative and absolute precision
-		Optimizer o(sys, *bs, ctc_xn, prec, goal_prec, goal_prec, samplesize);
+		Optimizer o(sys, *bs, ctc_compo, prec, goal_prec, goal_prec, samplesize);
 
 		// This option limits the search time
 		o.timeout=time_limit;

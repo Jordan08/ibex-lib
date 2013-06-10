@@ -76,6 +76,9 @@ Optimizer::Optimizer(System& user_sys, Bsc& bsc, Ctc& ctc, double prec,
 	diam_simplex=0;
 	nb_rand=0;
 	diam_rand=0;
+
+	//====================================
+	mylp = new LinearSolver(n+1,m);
 }
 
 Optimizer::~Optimizer() {
@@ -87,6 +90,8 @@ Optimizer::~Optimizer() {
 		delete is_inside;
 	}
 	buffer.flush();
+
+	delete mylp;
 }
 
 bool Optimizer::update_loup(const IntervalVector& box) {

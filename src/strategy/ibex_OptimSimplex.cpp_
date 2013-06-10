@@ -10,7 +10,6 @@
 
 
 #include "ibex_Optimizer.h"
-#include "ibex_LinearSolver.h"
 #include <stdlib.h>
 
 
@@ -44,7 +43,6 @@ bool Optimizer::update_loup_simplex(const IntervalVector& box) {
 	      x_corner[i]=box[i].ub();
 	  }
 	      
-	LinearSolver mylinearsolver(n+1,m);
 
 	Vector row(n+1);
 	IntervalVector bound(n+1);
@@ -75,10 +73,12 @@ bool Optimizer::update_loup_simplex(const IntervalVector& box) {
 	  }
 
 	}
-	mylinearsolver.initBoundVar(bound);
-	mylinearsolver.setVarObj(0,1.0); // set the objective
 
-	mylinearsolver.addConstraint(row,LEQ,0.0); // add the constraint of the objective function
+	mylp->cleanConst();
+	mylp->initBoundVar(bound);
+	mylp->setVarObj(0,1.0); // set the objective
+
+	mylp->addConstraint(row,LEQ,0.0); // add the constraint of the objective function
 
 	row[0] = 0.0;
 	//The linear system is generated
@@ -108,22 +108,22 @@ bool Optimizer::update_loup_simplex(const IntervalVector& box) {
 				else
 					row[j+1]=G[j].lb();
 			}
-			mylinearsolver.addConstraint(row,LEQ, (-g_corner)[i].lb()-mylinearsolver.getEpsilon());  //  1e-10 ???  BNE
+			mylp->addConstraint(row,LEQ, (-g_corner)[i].lb()-mylp->getEpsilon());  //  1e-10 ???  BNE
 			//mysoplex.addRow(LPRow(-infinity, row1, (-g_corner)[i].lb()-1e-10));    //  1e-10 ???  BNE
 		}
 	}
 
 
-	//		mylinearsolver.writeFile("dump.lp");
+	//		mylp->writeFile("dump.lp");
 	//		system ("cat dump.lp");
 
-	LinearSolver::Status_Sol stat = mylinearsolver.solve();
+	LinearSolver::Status_Sol stat = mylp->solve();
 
 	//	std::cout << " stat " << stat << std::endl;
 	if (stat == LinearSolver::OPTIMAL) {
 		//the linear solution is mapped to intervals and evaluated
 		Vector prim(n+1);
-		mylinearsolver.getPrimalSol(prim);
+		mylp->getPrimalSol(prim);
 
 		IntervalVector tmpbox(n);
 

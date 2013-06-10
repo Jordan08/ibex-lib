@@ -18,6 +18,7 @@
 #include "ibex_CellHeapOptim.h"
 #include "ibex_System.h"
 #include "ibex_EntailedCtr.h"
+#include "ibex_LinearSolver.h"
 
 namespace ibex {
 
@@ -357,6 +358,9 @@ protected:
 
 
 private:
+
+	/** linear solver used in ibex_OptimSimplex.cpp_ */
+	LinearSolver *mylp;
 
 	/** Inner contractor (for the negation of g) */
 	CtcUnion* is_inside;

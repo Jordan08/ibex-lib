@@ -205,7 +205,8 @@ LinearSolver::Status LinearSolver::getInfeasibleDir(Vector & sol) {
 	try {
 		soplex::SPxSolver::Status stat1;
 		soplex::DVector sol_found(nb_rows);
-		stat1 = mysoplex->getDualfarkas(sol_found);
+		mysoplex->getDualfarkas(sol_found);
+		//stat1 = mysoplex->getDualfarkas(sol_found);
 		// if (stat1==soplex::SPxSolver::OPTIMAL) // TODO I'm not sure of the value that return getDualfarkas : this condition does not work BNE
 
 		
@@ -1023,6 +1024,10 @@ std::ostream& operator<<(std::ostream& os, const LinearSolver::Status_Sol x){
 	switch(x) {
 	case(LinearSolver::OPTIMAL) :{
 			os << "OPTIMAL";
+			break;
+	}
+	case(LinearSolver::INFEASIBLE_NOTPROVED) :{
+			os << "INFEASIBLE_NOTPROVED";
 			break;
 	}
 	case(LinearSolver::INFEASIBLE) :{
