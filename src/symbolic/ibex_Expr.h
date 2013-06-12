@@ -75,7 +75,7 @@ public:
 	/** Unique number identifying this expression node
 	 *
 	 * This field is typically used as key in hash maps. The physical address of the
-	 * object is indeed not a good candidate (for being a key) because reproductibility
+	 * object is indeed not a good candidate (for being a key) because reproducibility
 	 * is lost in this case.
 	 */
 	const long id;
@@ -144,11 +144,11 @@ public:
 std::ostream& operator<<(std::ostream&, const ExprNode&);
 
 /**
- * \brief Delete all the nodes of an expression, including itself.
+ * \brief Delete all the nodes of several expression, including themselves.
  *
  * \param delete_symbols if false, symbols are not deleted.
  */
-void cleanup(const ExprNode& expr, bool delete_symbols);
+void cleanup(const Array<const ExprNode>& expr, bool delete_symbols);
 
 /**
  * \ingroup symbolic
@@ -486,6 +486,9 @@ public:
 
 	/** Create the expression x[index]. */
 	const ExprIndex& operator[](int index) { return ((const ExprNode&) *this)[index]; }
+
+	/** Create an equality constraint x=y. */
+	const ExprCtr& operator=(const Variable& y) const { return ((const ExprNode&) *this)=y; }
 
 	/** Create an equality constraint x=value. */
 	const ExprCtr& operator=(const Interval& value) const { return ((const ExprNode&) *this)=value; }

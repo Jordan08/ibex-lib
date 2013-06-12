@@ -15,14 +15,25 @@
 namespace ibex {
 
 CtcFwdBwd::CtcFwdBwd(Function& f, CmpOp op, FwdMode mode) : Ctc(f.nb_var()), ctr(f,op), hc4r(mode) {
+	input = new BoolMask(nb_var);
+	output = new BoolMask(nb_var);
+
 	for (int v=0; v<ctr.f.nb_var(); v++)
-		output[v]=input[v]=ctr.f.used(v);
+		(*output)[v]=(*input)[v]=ctr.f.used(v);
 
 }
 
 CtcFwdBwd::CtcFwdBwd(const NumConstraint& ctr, FwdMode mode) : Ctc(ctr.f.nb_var()), ctr(ctr.f,ctr.op), hc4r(mode) {
+	input = new BoolMask(nb_var);
+	output = new BoolMask(nb_var);
+
 	for (int v=0; v<ctr.f.nb_var(); v++)
-		output[v]=input[v]=ctr.f.used(v);
+		(*output)[v]=(*input)[v]=ctr.f.used(v);
+}
+
+CtcFwdBwd::~CtcFwdBwd() {
+	delete input;
+	delete output;
 }
 
 void CtcFwdBwd::contract(IntervalVector& box) {
@@ -47,7 +58,10 @@ void CtcFwdBwd::contract(IntervalVector& box) {
 	}
 
 	try {
-		hc4r.proj(ctr.f,root_label,box);
+		if (hc4r.proj(ctr.f,root_label,box)) {
+			set_flag(INACTIVE);
+			set_flag(FIXPOINT);
+		}
 	} catch (EmptyBoxException& e) {
 		box.set_empty();
 		throw e;

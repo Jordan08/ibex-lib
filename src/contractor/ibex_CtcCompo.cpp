@@ -17,13 +17,13 @@ const double CtcCompo::default_ratio = 0.1;
 
 void CtcCompo::init_impacts() {
 
-	impacts = new BoolMask[list.size()];
-
-	for (int i=0; i<list.size(); i++) {
-		assert(list[i].nb_var==nb_var);
-		impacts[i].resize(nb_var);
-		impacts[i].set_all();
-	}
+//	impacts = new BoolMask[list.size()];
+//
+//	for (int i=0; i<list.size(); i++) {
+//		assert(list[i].nb_var==nb_var);
+//		impacts[i].resize(nb_var);
+//		impacts[i].set_all();
+//	}
 }
 
 CtcCompo::CtcCompo(const Array<Ctc>& list, bool incremental, double ratio) :
@@ -71,32 +71,30 @@ CtcCompo::CtcCompo(Ctc& c1, Ctc& c2, Ctc& c3, Ctc& c4, Ctc& c5, Ctc& c6, bool in
 
 
 CtcCompo::~CtcCompo() {
-	delete[] impacts;
+//	delete[] impacts;
 }
+
 
 void CtcCompo::contract(IntervalVector& box) {
+
+//	if (incremental) {
+//		for (int i=0; i<list.size(); i++) {
+//			IntervalVector old_box(box);
+//			impacts[i] |= impact;
+//
+//			list[i].contract(box);
+//
+//			for (int j=0; j<nb_var; j++) {
+//				if (old_box[j].rel_distance(box[j])>ratio)
+//					for (int i2=0; i2<list.size(); i2++)
+//						if (i2!=i) impacts[i2].set(j);
+//			}
+//		}
+//		return;
+//	}
+
 	for (int i=0; i<list.size(); i++) {
 		list[i].contract(box);
-	}
-}
-
-void CtcCompo::contract(IntervalVector& box, const BoolMask& impact) {
-	if (!incremental) {
-		contract(box);
-		return;
-	}
-
-	for (int i=0; i<list.size(); i++) {
-		IntervalVector old_box(box);
-		impacts[i] |= impact;
-
-		list[i].contract(box);
-
-		for (int j=0; j<nb_var; j++) {
-			if (old_box[j].rel_distance(box[j])>ratio)
-				for (int i2=0; i2<list.size(); i2++)
-					if (i2!=i) impacts[i2].set(j);
-		}
 	}
 
 }

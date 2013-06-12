@@ -13,7 +13,7 @@
 #include "ibex_DimException.h"
 #include "ibex_Function.h"
 #include "ibex_ExprPrinter.h"
-#include "ibex_ExprNodes.h"
+#include "ibex_ExprSubNodes.h"
 #include "ibex_ExprSize.h"
 #include "ibex_String.h"
 #include <sstream>
@@ -48,10 +48,9 @@ ExprNode::ExprNode(int height, int size, const Dim& dim) :
 
 }
 
-void cleanup(const ExprNode& expr, bool delete_symbols) {
-	SubNodes nodes(expr);
-	int size=expr.size; // (warning: expr will be deleted in the loop)
-	for (int i=0; i<size; i++)
+void cleanup(const Array<const ExprNode>& expr, bool delete_symbols) {
+	ExprSubNodes nodes(expr);
+	for (int i=0; i<nodes.size(); i++)
 		if (delete_symbols || (!dynamic_cast<const ExprSymbol*>(&nodes[i])))
 			delete (ExprNode*) &nodes[i];
 }

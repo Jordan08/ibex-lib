@@ -15,7 +15,7 @@
 
 #include "ibex_Expr.h"
 #include "ibex_ExprVisitor.h"
-#include "ibex_ExprNodes.h"
+#include "ibex_ExprSubNodes.h"
 #include "ibex_FwdAlgorithm.h"
 #include "ibex_BwdAlgorithm.h"
 
@@ -130,7 +130,7 @@ protected:
 	friend std::ostream& operator<<(std::ostream&,const CompiledFunction&);
 
 	int n; // == the size of the root expression of the expression
-	SubNodes nodes;
+	ExprSubNodes nodes;
 	operation *code;
 	int* nb_args;
 	mutable ExprLabel*** args;
