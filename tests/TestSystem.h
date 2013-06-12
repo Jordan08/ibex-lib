@@ -25,25 +25,32 @@ public:
 		TEST_ADD(TestSystem::factory02);
 		TEST_ADD(TestSystem::copy01);
 		TEST_ADD(TestSystem::copy02);
+		TEST_ADD(TestSystem::ineq01);
 		TEST_ADD(TestSystem::normalize01);
 //		TEST_ADD(TestSystem::normalize02);
 		TEST_ADD(TestSystem::extend01);
 		TEST_ADD(TestSystem::extend02);
 //		TEST_ADD(TestSystem::extend02);
-
-
+		TEST_ADD(TestSystem::merge01);
+		TEST_ADD(TestSystem::merge02);
+		TEST_ADD(TestSystem::merge03);
+		TEST_ADD(TestSystem::merge04);
 	}
 
 	void factory01();
 	void factory02();
 	void copy01();
 	void copy02();
+	void ineq01();
 	void normalize01();
 //	void normalize02();
 	void extend01();
 	void extend02();
 //	void extend02();
-
+	void merge01();
+	void merge02();
+	void merge03();
+	void merge04();
 };
 
 } // end namespace
