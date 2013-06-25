@@ -35,6 +35,8 @@ bool Sweep::try_inflate(const Vector& pt, IntervalVector& X, const Vector& min_w
 	//int m=csp.nb_ctr();  // for [basic round-robin]
 	int c=ctr_num;
 
+	IntervalVector area(X);
+
 	do {
 		//cout << "\n\ntry inflation with ctr " << c << ": " << csp.ctrs[c] << "\n";
 		//cout << "   pt=" << pt << endl;
@@ -58,7 +60,6 @@ bool Sweep::try_inflate(const Vector& pt, IntervalVector& X, const Vector& min_w
 		case GEQ: neg=Interval(NEG_INFINITY,previous_float(0)); break;
 		case GT:  neg=Interval::NEG_REALS; break;
 		}
-
 		// see if pt is inside the forbidden region of c
 		if (y.is_subset(neg)) {
 
@@ -76,6 +77,7 @@ bool Sweep::try_inflate(const Vector& pt, IntervalVector& X, const Vector& min_w
 				//ctr_num = (c+1)%m; // [basic round-robin] update constraint number for next call
 				return true;
 			} else {
+				X=area;
 				//cout << c << "   insignificant " << wl << endl;
 			}
 		}

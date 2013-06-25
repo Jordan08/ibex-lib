@@ -85,21 +85,21 @@ public:
 			//cout << "before HC4=" << box << endl;
 			hc4->contract(box);
 			//cout << "after HC4=" << box << endl;
-//			{
-//				int order[2] = {0,1};
-//				Sweep s(*csp, order, JUMP_RATIO);
-//				loop |=s.sweep(box,true);
-//				loop |=s.sweep(box,false);
-//			}
-//			//cout << "before HC4=" << box << endl;
-//			hc4->contract(box);
-//			//cout << "after HC4=" << box << endl;
-//			{
-//				int order[2] = {1,0};
-//				Sweep s(*csp, order, JUMP_RATIO);
-//				loop |=s.sweep(box,true);
-//				loop |=s.sweep(box,false);
-//			}
+			{
+				int order[2] = {0,1};
+				Sweep s(*csp, order, JUMP_RATIO);
+				loop |=s.sweep(box,true);
+				loop |=s.sweep(box,false);
+			}
+			//cout << "before HC4=" << box << endl;
+			hc4->contract(box);
+			//cout << "after HC4=" << box << endl;
+			{
+				int order[2] = {1,0};
+				Sweep s(*csp, order, JUMP_RATIO);
+				loop |=s.sweep(box,true);
+				loop |=s.sweep(box,false);
+			}
 		}
 	}
 
