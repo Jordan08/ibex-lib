@@ -62,7 +62,7 @@ bool Sweep::try_inflate(const Vector& pt, IntervalVector& X, const Vector& min_w
 		}
 		// see if pt is inside the forbidden region of c
 		if (y.is_subset(neg)) {
-
+			//std::cout << csp.f[c] << " y=" << y << " neg=" << neg << std::endl;
 			// try to inflate with c
 			csp.f[c].iproj(neg,X,pt);
 
@@ -155,7 +155,9 @@ bool Sweep::sweep(IntervalVector& box, bool min) {
 
 	if (b) {
 		jump_vector = min? area.lb() : area.ub();
-		box[order[0]]=Interval(area[order[0]].lb(),box[order[0]].ub());
+		//box[order[0]]=Interval(area[order[0]].lb(),box[order[0]].ub());
+		if(min) box[order[0]]=Interval(area[order[0]].lb(),box[order[0]].ub());
+		else	box[order[0]]=Interval(box[order[0]].lb(),area[order[0]].ub());
 		return success;
 	} else {
 		box.set_empty();
