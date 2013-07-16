@@ -36,8 +36,10 @@ int main(int argc, char** argv){
 	double timelimit = atof(argv[6]);
 
 	srand(1);
+
 	// the extended system 
-	System ext_sys(sys,System::EXTEND);
+	ExtendedSystem ext_sys(sys);
+
 
         cout << "file " << argv[1] << endl;
 
@@ -94,15 +96,15 @@ int main(int argc, char** argv){
 
 	// The CtcXNewtonIter contractor
 	// corner selection for linearizations : two corners are slected, a random one and its opposite
-	vector<CtcXNewtonIter::corner_point> cpoints;
-	cpoints.push_back(CtcXNewtonIter::RANDOM);
-	cpoints.push_back(CtcXNewtonIter::RANDOM_INV);
+	vector<CtcXNewton::corner_point> cpoints;
+	cpoints.push_back(CtcXNewton::RANDOM);
+	cpoints.push_back(CtcXNewton::RANDOM_INV);
 
         // the linear relaxation contractor 
-	 CtcXNewtonIter ctcxnewton (ext_sys,cpoints);
+	 CtcXNewton ctcxnewton (ext_sys,cpoints);
 
 	// fixpoint linear relaxation , hc4  with default fix point ratio 0.2
-	CtcXNewton cxn (ctcxnewton, hc44xn);
+	CtcLinearRelaxation cxn (ctcxnewton, hc44xn);
 	//  the actual contractor  ctc + xnewton	
         CtcCompo ctcxn (*ctc, cxn);
 	// one point probed when looking for a new feasible point (updating the loup)

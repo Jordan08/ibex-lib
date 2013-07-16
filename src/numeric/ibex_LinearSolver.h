@@ -15,7 +15,7 @@
 
 #define _IBEX_WITH_SOPLEX_ 1
 //#define _IBEX_WITH_CPLEX_ 1
-
+//#define _IBEX_WITH_ILOCPLEX_ 1
 
 #include <string.h>
 #include <stdio.h>
@@ -26,10 +26,17 @@
 
 #ifdef _IBEX_WITH_SOPLEX_
 #include "soplex.h"
-#endif
 
+#else
 #ifdef _IBEX_WITH_CPLEX_
 #include "cplex.h"
+
+#else
+#ifdef _IBEX_WITH_ILOCPLEX_
+#include <ilcplex/ilocplex.h>
+
+#endif
+#endif
 #endif
 
 namespace ibex {
@@ -62,6 +69,14 @@ private:
 	int * 		cmatind;
 #endif
 
+#ifdef _IBEX_WITH_ILOCPLEX_
+	IloEnv		*myenv;
+    IloModel 	*mymodel;
+	IloCplex	*mycplex;
+#endif
+
+
+
 public:
 
 	static const double default_eps;
@@ -75,7 +90,8 @@ public:
 
 
 	/** Default max_diam_deriv value, set to 1e6  **/
-	static const double default_max_diam_box;
+	static const Interval default_limit_diam_box;
+
 
 
 	typedef enum  {OPTIMAL=1, INFEASIBLE=2, INFEASIBLE_NOTPROVED=3, UNKNOWN=0, TIME_OUT=-1, MAX_ITER=-2} Status_Sol;
@@ -92,7 +108,7 @@ public:
 
 	Status_Sol solve();
 
-	Status writeFile(std::string name="save_LP.lp");
+	Status writeFile(const char* name="save_LP.lp");
 
 
 // GET
