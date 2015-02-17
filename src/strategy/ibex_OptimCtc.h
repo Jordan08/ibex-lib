@@ -143,11 +143,6 @@ public:
 	 2 for printing each handled node */
 	int trace;
 
-	/** Probability to choose the second criterion in node selection in percentage
-	 * integer in [0,100] default value 50
-	 * the value 0 corresponds to use a single criterion for node selection (the classical one : minimizing the lower bound of the estimate of the objective)
-	 * the value 100 corresponds to use a single criterion for node selection (the second one used in buffer2) */
-	 int critpr;
 
 	/**
 	 * \brief Time limit.

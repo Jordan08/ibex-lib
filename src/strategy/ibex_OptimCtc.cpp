@@ -32,8 +32,7 @@ OptimCtc::OptimCtc( Ctc& ctc_out, Ctc&  ctc_in, Function& f_cost, Bsc& bsc, doub
 			_localopti(f_cost, IntervalVector(f_cost.nb_var())),
 			bsc(bsc), buffer(n),  // first buffer with LB, second buffer with crit (default UB))
 			prec(prec), goal_rel_prec(goal_rel_prec), goal_abs_prec(goal_abs_prec),
-			trace(false),
-			critpr(critpr), timeout(1e08), time(0), nb_cells(0),
+			trace(false), timeout(1e08), time(0), nb_cells(0),
 			loup(POS_INFINITY), uplo(NEG_INFINITY),	loup_point(n),
 			loup_changed(false),  uplo_of_epsboxes(POS_INFINITY) {
 
@@ -68,10 +67,12 @@ bool OptimCtc::localsearch(const IntervalVector* box, int nb) {
 	{
 		Vector v_tmp(box[0].size());
 		for (int i=0; i<nb;i++) {
+
 			_localopti.set_box(box[i]);
 			UnconstrainedLocalSearch::ReturnCode code =
 					_localopti.minimize(box[i].random(),v_tmp,goal_rel_prec,100);
-			if (code != UnconstrainedLocalSearch::INVALID_POINT) {
+			//cout << "[localsearch] "  <<code << " box " << box[i]   << endl;
+			if (code == UnconstrainedLocalSearch::SUCCESS) {
 				Interval tmp = _f_cost.eval(v_tmp);
 				if (tmp.ub()<loup) {
 					//update the loup
@@ -268,6 +269,7 @@ void OptimCtc::contract_and_bound(OptimCell& c, const IntervalVector& init_box) 
 
 		if (flags[Ctc::INACTIVE]) {
 			// all the constraint are inactive ( = the entire box is feasible)
+			//cout << " [contract_out] box entirely feasible " << endl;
 			c.pu =1;
 		}
 
@@ -293,6 +295,7 @@ void OptimCtc::contract_and_bound(OptimCell& c, const IntervalVector& init_box) 
 			if (tmp==c.box) {
 				if (flags[Ctc::INACTIVE]) {
 				// all the constraint are active ( = the entire box is unfeasible)
+					//cout << " [contract_in] box entirely infeasible " << endl;
 					c.box.set_empty();
 					throw EmptyBoxException();
 				}
@@ -310,6 +313,7 @@ void OptimCtc::contract_and_bound(OptimCell& c, const IntervalVector& init_box) 
 
 
 		} catch (EmptyBoxException &) {
+			//cout << " [contract_in] box entirely feasible " << endl;
 			//draw_vibes(c.box,IntervalVector(1,Interval::EMPTY_SET),"b");
 			c.pu=1;
 		}
@@ -382,7 +386,7 @@ void OptimCtc::contract ( IntervalVector& box) {
 
 void OptimCtc::optimize(const IntervalVector& init_box, double obj_init_bound) {
 	loup=obj_init_bound;
-
+	if (trace >= 2) cout << "--START--"<< endl;
 	uplo=NEG_INFINITY;
 	uplo_of_epsboxes=POS_INFINITY;
 
@@ -399,7 +403,7 @@ void OptimCtc::optimize(const IntervalVector& init_box, double obj_init_bound) {
 	bsc.add_backtrackable(*root);
 
 	loup_changed=false;
-	loup_point=init_box.mid();
+	loup_point=Vector(init_box.size());
 	time=0;
 	Timer::start();
 	handle_cell(*root,init_box);
@@ -408,11 +412,9 @@ void OptimCtc::optimize(const IntervalVector& init_box, double obj_init_bound) {
 	try {
 		while (!buffer.empty()) {
 			if (trace >= 2) cout << " buffer " << ((CellBuffer&) buffer) << endl;
-			//		  cout << "buffer size "  << buffer.size() << " " << buffer2.size() << endl;
 
 			update_uplo();
 			if (buffer.empty()) {
-				//cout << " buffer empty " << buffer.empty() << " " << buffer2.empty() << endl;
 				break;
 			}
 
