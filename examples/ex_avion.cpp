@@ -9,6 +9,7 @@
 
 
 #include "ibex.h"
+#include <stdlib.h>
 
 using namespace std;
 using namespace ibex;
@@ -21,15 +22,15 @@ int main() {
 //		vibes::beginDrawing();           // <== Initializes the VIBES "connection"
 //		vibes::newFigure(figureName);       // <== Create a new VIBes figure
 
-		double epsilon = 1.e-8;
-		double gaol_prec= 1.e-6;
+		double epsilon = 1.e-4;
+		double gaol_prec= 1.e-4;
 		double epsilon_time = 1.e-4;
 		double T_final= 1;
-		double time_out= 1000;
+		double time_out= 3600;
 
 		Interval init_time(0,T_final);
 
-		double secu =0.01;
+		double secu =0.001;
 		// number of plane
 		int n=4;
 		
@@ -128,7 +129,8 @@ int main() {
 
 		// Build the initial box of V
 		IntervalVector init_box(3*n,init_time);
-		init_box.put(2*n,IntervalVector(n,Interval(-1.1,1.1)));
+		init_box.put(n,IntervalVector(n,Interval(0.1,0.9)));
+		init_box.put(2*n,IntervalVector(n,Interval(0.9,1.1)));
 
 
 		// objective function
@@ -149,6 +151,7 @@ int main() {
 			o.timeout=time_out;
 
 			// the search itself
+			cout<< " initial box: "<< init_box << endl;
 			o.optimize(init_box);
 
 			// printing the results

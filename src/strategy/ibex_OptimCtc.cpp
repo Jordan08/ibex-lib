@@ -112,7 +112,7 @@ bool OptimCtc::direct_try( const Vector point) {
 
 			int prec=cout.precision();
 			cout.precision(12);
-			cout << "[direct]"  << " loup update " << loup  << " loup point  " << loup_point << endl;
+			cout << "[direct out]"  << " loup update " << loup  << " loup point  " << loup_point << endl;
 			cout.precision(prec);
 		} else {
 			try {
@@ -127,7 +127,7 @@ bool OptimCtc::direct_try( const Vector point) {
 
 				int prec=cout.precision();
 				cout.precision(12);
-				cout << "[direct]"  << " loup update " << loup  << " loup point  " << loup_point << endl;
+				cout << "[direct in]"  << " loup update " << loup  << " loup point  " << loup_point << endl;
 				cout.precision(prec);
 
 
@@ -327,7 +327,8 @@ void OptimCtc::contract_and_bound(OptimCell& c, const IntervalVector& init_box) 
 
 	bool loup_ch = localsearch(box_ok,size_box_ok);
 	if (c.pu==1) {
-		loup_ch = (loup_ch || localsearch(&c.box,1));
+		//cout<<c.box<<endl;
+		loup_ch = (loup_ch || localsearch(&(c.box),1));
 	}
 	else  {
 		// try on the middle point
