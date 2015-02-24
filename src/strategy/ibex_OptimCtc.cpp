@@ -189,7 +189,7 @@ void OptimCtc::handle_cell(OptimCell& c, const IntervalVector& init_box ){
 
 	}
 	catch(EmptyBoxException&) {
-		draw_vibes(c.box,IntervalVector(1,Interval::EMPTY_SET),"r");
+		//draw_vibes(c.box,IntervalVector(1,Interval::EMPTY_SET),"r");
 		delete &c;
 	}
 }
@@ -249,9 +249,9 @@ void OptimCtc::contract_and_bound(OptimCell& c, const IntervalVector& init_box) 
 			IntervalVector save_box(c.box);
 			c.pf &= Interval(NEG_INFINITY,ymax);
 			HC4Revise(AFFINE_MODE).proj(_f_cost,Domain(c.pf),c.box); /// equivalent to :_f_cost.backward(c.pf,c.box);
-			draw_vibes(save_box,c.box,"[g]");
+			//draw_vibes(save_box,c.box,"[g]");
 		} catch (EmptyBoxException& e) {
-			draw_vibes(c.box,IntervalVector(1,Interval::EMPTY_SET),"[g]");
+			//draw_vibes(c.box,IntervalVector(1,Interval::EMPTY_SET),"[g]");
 			c.box.set_empty();
 			throw e;
 		}
@@ -470,7 +470,7 @@ void OptimCtc::optimize(const IntervalVector& init_box, double obj_init_bound) {
 
 			}
 			catch (NoBisectableVariableException& ) {
-				draw_vibes(c->box,IntervalVector(1,Interval::EMPTY_SET),"[y]");
+				//draw_vibes(c->box,IntervalVector(1,Interval::EMPTY_SET),"[y]");
 				update_uplo_of_epsboxes (c->pf.lb());
 
 				buffer.pop();
@@ -590,7 +590,7 @@ void OptimCtc::time_limit_check () {
 	Timer::start();
 }
 
-
+/*
 void OptimCtc::draw_vibes( const IntervalVector& X0, const IntervalVector& X,const string color) {
 	if (X.is_empty()) {
 //		vibes::drawBox(X0,color);
@@ -605,6 +605,7 @@ void OptimCtc::draw_vibes( const IntervalVector& X0, const IntervalVector& X,con
 	delete[] rest;
 	return;
 }
+*/
 
 
 } // end namespace ibex
