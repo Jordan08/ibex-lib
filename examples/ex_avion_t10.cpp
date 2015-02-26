@@ -14,7 +14,7 @@
 using namespace std;
 using namespace ibex;
 
-static int ind = 4;
+static int ind = 0;
 
 void contract_and_draw( Ctc& c, IntervalVector& X, const string color, const string colorother) {
 	IntervalVector X0(X);       // get a copy
@@ -47,11 +47,11 @@ void contract_and_draw( Ctc& c, IntervalVector& X, const string color, const str
 
 int main() {
 	{
-		std::string figureName = "Avion_0-1";
+		std::string figureName = "2Avion_0-1_t";
 		vibes::beginDrawing();           // <== Initializes the VIBES "connection"
 		vibes::newFigure(figureName);       // <== Create a new VIBes figure
 
-		double epsilon = 5.e-3;
+		double epsilon = 1.e-2;
 		double gaol_prec= 1.e-2;
 		double epsilon_time = 1.e-4;
 		double T_final= 1;
@@ -59,9 +59,9 @@ int main() {
 
 		Interval proj_time(0,T_final);
 
-		Interval init_time(0.1);
+		Interval init_time(0,T_final);
 		Interval init_delta(0.4);
-		Interval init_q(-0.1,0.1);
+		Interval init_q(0.05);
 
 		double secu =0.01;
 		// number of plane

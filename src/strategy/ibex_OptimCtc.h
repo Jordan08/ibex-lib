@@ -277,7 +277,7 @@ private:
 	/** Lower bound of the small boxes taken by the precision */
 	double uplo_of_epsboxes;
 
-//	void draw_vibes( const IntervalVector& X0, const IntervalVector& X,const std::string color);
+	void draw_vibes( const IntervalVector& X0, const IntervalVector& X,const std::string color);
 
 };
 

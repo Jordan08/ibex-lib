@@ -47,7 +47,7 @@ void contract_and_draw( Ctc& c, IntervalVector& X, const string color, const str
 
 int main() {
 	{
-		std::string figureName = "Avion_0-1";
+		std::string figureName = "2Avion_0-1";
 		vibes::beginDrawing();           // <== Initializes the VIBES "connection"
 		vibes::newFigure(figureName);       // <== Create a new VIBes figure
 
@@ -60,10 +60,10 @@ int main() {
 		Interval proj_time(0,T_final);
 
 		Interval init_time(0.1);
-		Interval init_delta(0.4);
-		Interval init_q(-0.1,0.1);
+		Interval init_delta(0.3);
+		Interval init_q(-0.2,0.2);
 
-		double secu =0.01;
+		double secu =0.1;
 		// number of plane
 		int n=2;
 		
@@ -102,14 +102,14 @@ int main() {
 			chi(t-tm,
 				p[0]+v[0]*t,
 				chi(t-(tm+delta),
-						p[0]-q*v[0]*tm+(1+q)*v[0]*t,
+						p[0]-q*v[0]*tm+q*v[0]*t,
 						p[0]+q*v[0]*delta + v[0]*t
 				  )
 			),
 			chi(t-tm,
 				p[1]+v[1]*t,
 				chi(t-(tm+delta),
-						p[1]-q*v[1]*tm+(1+q)*v[1]*t,
+						p[1]-q*v[1]*tm+q*v[1]*t,
 						p[1]+q*v[1]*delta + v[1]*t
 				  )
 			)

@@ -13,8 +13,8 @@
 
 using namespace std;
 using namespace ibex;
-
-static int ind = 4;
+/*
+static int ind = 0;
 
 void contract_and_draw( Ctc& c, IntervalVector& X, const string color, const string colorother) {
 	IntervalVector X0(X);       // get a copy
@@ -42,24 +42,24 @@ void contract_and_draw( Ctc& c, IntervalVector& X, const string color, const str
 	delete[] rest;
 	return;
 }
-
+*/
 
 
 int main() {
-	{
-		std::string figureName = "Avion_0-1";
+
+		std::string figureName = "Avion_tt-0-1";
 		vibes::beginDrawing();           // <== Initializes the VIBES "connection"
 		vibes::newFigure(figureName);       // <== Create a new VIBes figure
 
-		double epsilon = 5.e-3;
-		double gaol_prec= 1.e-2;
+		double epsilon = 1.e-6;
+		double gaol_prec= 1.e-3;
 		double epsilon_time = 1.e-4;
 		double T_final= 1;
 		double time_out= 3600;
 
 		Interval proj_time(0,T_final);
 
-		Interval init_time(0.1);
+		Interval init_time(0,T_final);
 		Interval init_delta(0.4);
 		Interval init_q(-0.1,0.1);
 
@@ -90,9 +90,8 @@ int main() {
 		P[3][1] = 1;
 		V[3][0] = -1;
 		V[3][1] = -1.3;
-*/
+		*/
 
-		
 		// Symbolic part
 		Variable t,tm, delta,p(2),v(2),q, Z(2);
 		Variable Tm(n),Delta(n),Q(n);
@@ -167,34 +166,30 @@ int main() {
 
 
 
+		// objective function
 
-		// Build the way boxes will be bisected.
-		// "LargestFirst" means that the dimension bisected
-		// is always the largest one.
-		LargestFirst lf;
-		list<IntervalVector> s;
-		s.push_back(init_box);
-		IntervalVector box(3*n);
-		cout<<"start"<<endl;
-		int i=0;
-		while (!s.empty()) {
-			box=s.front();
-			s.pop_front();
-			contract_and_draw(outside,box,"[blue]k","[magenta]k");
-			if (box.is_empty())  continue;
+		const ExprNode* e=&((1000*sqr(Q[0]*Delta[0])-Tm[0]));
+		for (int i=1; i<n; i++)
+			e = & (*e + (1000*sqr(Q[i]*Delta[i])-Tm[i]));
+		Function f_cost(Tm,Delta,Q,*e);
 
-			contract_and_draw(inside,box,"[red]k","[cyan]k");
-			if (box.is_empty())  continue;
+		// create a stategy to bisect a element
+		LargestFirst  bsc(epsilon);
 
-			if (box.max_diam()<epsilon) {
-				vibes::drawBox(box[ind].lb(),box[ind].ub(),box[ind+1].lb(),box[ind+1].ub(),"[yellow]k");
-			} else {
-				pair<IntervalVector,IntervalVector> boxes=lf.bisect(box);
-				s.push_back(boxes.first);
-				s.push_back(boxes.second);
-			}
-		}
-	}
+		OptimCtc o(outside,inside,f_cost,bsc,epsilon,gaol_prec,gaol_prec);
+		// the trace
+			o.trace=1;
+
+			// the allowed time for search
+			o.timeout=time_out;
+
+			// the search itself
+			cout<< " initial box: "<< init_box << endl;
+			o.optimize(init_box);
+
+			// printing the results
+			o.report();
+			o.report_perf();
 
 	vibes::endDrawing();      // <== closes the VIBES "connection"
 	return 0;

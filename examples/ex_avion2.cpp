@@ -102,14 +102,14 @@ int main() {
 			chi(t-tm,
 				p[0]+v[0]*t,
 				chi(t-(tm+delta),
-						p[0]-q*v[0]*tm+q*v[0]*t,
+						p[0]-q*v[0]*tm+(1+q)*v[0]*t,
 						p[0]+q*v[0]*delta + v[0]*t
 				  )
 			),
 			chi(t-tm,
 				p[1]+v[1]*t,
 				chi(t-(tm+delta),
-						p[1]-q*v[1]*tm+q*v[1]*t,
+						p[1]-q*v[1]*tm+(1+q)*v[1]*t,
 						p[1]+q*v[1]*delta + v[1]*t
 				  )
 			)

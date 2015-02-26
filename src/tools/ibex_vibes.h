@@ -38,6 +38,7 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include "ibex_IntervalVector.h"
 
 #ifdef VIBES_DEBUG_API
 #include <iostream>
